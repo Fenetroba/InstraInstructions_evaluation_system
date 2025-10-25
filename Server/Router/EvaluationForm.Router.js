@@ -19,7 +19,6 @@ const validateEvaluationForm = [
   body('academicYear').notEmpty().withMessage('Academic year is required'),
   body('semester').isIn(['Spring', 'Summer', 'Fall']).withMessage('Invalid semester'),
   body('instructor').isMongoId().withMessage('Invalid instructor ID'),
-  body('course').isMongoId().withMessage('Invalid course ID'),
   body('department').isMongoId().withMessage('Invalid department ID'),
   body('startDate').isISO8601().withMessage('Invalid start date'),
   body('endDate').isISO8601().withMessage('Invalid end date'),

@@ -10,4 +10,5 @@ router.delete('/delete-user/:id', protect, authorize('department_head'), deleteU
 router.put('/edit-user/:id', protect, authorize('department_head'), editUser);
 router.get('/search-user', protect, authorize('department_head'), fetchUserSingle);
 
+
 export default router;

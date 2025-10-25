@@ -14,7 +14,7 @@ export const createEvaluationForm = asyncHandler(async (req, res) => {
       academicYear,
       semester,
       instructor,
-      course,
+      courseCode,
       department,
       criteria,
       questions,
@@ -24,7 +24,7 @@ export const createEvaluationForm = asyncHandler(async (req, res) => {
 
     // Check if an evaluation already exists for this course and semester
     const existingEvaluation = await EvaluationForm.findOne({
-      course,
+      courseCode,
       academicYear,
       semester,
       status: { $ne: 'archived' }
@@ -43,7 +43,7 @@ export const createEvaluationForm = asyncHandler(async (req, res) => {
       academicYear,
       semester,
       instructor,
-      course,
+      courseCode,
       department,
       criteria,
       questions,

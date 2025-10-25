@@ -30,10 +30,9 @@ const evaluationSchema = new mongoose.Schema({
     ref: 'UserAuth',
     required: [true, 'Instructor is required']
   },
-  course: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Course',
-    required: [true, 'Course is required']
+  courseCode: {
+    type: String,
+    default:''
   },
   department: {
     type: mongoose.Schema.Types.ObjectId,

@@ -116,6 +116,7 @@ const usersDataSlice = createSlice({
   },
 });
 
+
 export const { clearCurrentUser } = usersDataSlice.actions;
 
 export default usersDataSlice.reducer;
