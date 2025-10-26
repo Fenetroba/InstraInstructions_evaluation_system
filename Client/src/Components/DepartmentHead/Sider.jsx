@@ -74,7 +74,7 @@ const Sider = () => {
   };
 
   return (
-    <div>
+    <div >
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger className="text-[17px] bg-(--four) p-2 rounded-[4px] cursor-pointer m-3 text-(--one) flex items-center gap-2">
           <User2 className="h-5 w-5" />

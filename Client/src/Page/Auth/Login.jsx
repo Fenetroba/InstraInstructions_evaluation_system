@@ -1,9 +1,11 @@
 import { loginUser } from '@/Store/AuthUserSlice';
 import React, { useState } from 'react';
 import { FaUser, FaLock, FaSignInAlt } from 'react-icons/fa';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import logo from '../../assets/logo_2.png'
+
 const Login = () => {
   const navigate=useNavigate();
   const dispatch=useDispatch()
@@ -11,6 +13,7 @@ const Login = () => {
     username: '',
     password: ''
   });
+  const {loading}=useSelector(state=>state.auth)
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -55,7 +58,7 @@ const Login = () => {
   };
 
   return (
-    <div className='min-h-screen flex flex-col md:flex-row '>
+    <div className='min-h-screen  backdrop-blur-[10px] magicpattern flex  items-center  bg-blue-100'>
       {/* Login Form */}
       <div className='w-full md:w-1/2 flex items-center justify-center p-8'>
         <div className='w-full max-w-md bg-(--six) p-8 rounded-xl shadow-lg'>
@@ -114,19 +117,20 @@ const Login = () => {
             
             <button
               type='submit'
-              className='w-full flex justify-center items-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-(--three) hover:bg-(--four) cursor-pointer'
+              className={` ${loading && 'bg-gray-700'} w-full flex justify-center items-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-(--three) hover:bg-(--four) cursor-pointer`}
             >
               <FaSignInAlt className='mr-2' />
-              Sign In
+              {loading?'Loading...':'Sign In'}
             </button>
           </form>
         </div>
       </div>
       
       {/* Right Side - Decorative */}
-      <div className='hidden md:flex md:w-screen bg-(--six) items-center justify-center p-12'>
-        <div className='text-white text-center max-w-md'>
-          <h2 className='text-4xl font-bold mb-4'>Oromia State University </h2>
+      <div className='flex items-end'>
+        <div className='text-white text-center max-w-ms  backdrop-blur-[30px]  p-10 shadow-lg rounded-lg text-(--one)'>
+          <img src={logo} alt="logo" className='w-20 h-20' />
+          <h2 className='text-4xl font-bold mb-4 tex'>Oromia State University </h2>
           <p className='text-blue-100 text-lg'>
             Instructor Evaluation System
           </p>

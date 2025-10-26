@@ -1,7 +1,7 @@
 import EvaluationForm  from '../Model/EvaluationForm.model.js';
 import { validationResult } from 'express-validator';
 import asyncHandler  from 'express-async-handler';
-
+import UserAuth from '../Model/UserAuth.model.js';  // Add this line
 export const createEvaluationForm = asyncHandler(async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -70,63 +70,86 @@ export const createEvaluationForm = asyncHandler(async (req, res) => {
 // @desc    Get all evaluation forms
 // @route   GET /api/evaluation-forms
 // @access  Private
+// @desc    Get all evaluation forms with pagination
+// @route   GET /api/evaluation-forms
+// @access  Private
 export const getEvaluationForms = asyncHandler(async (req, res) => {
   try {
-    const {
-      instructor,
-      course,
-      department,
-      status,
-      academicYear,
-      semester,
-      page = 1,
-      limit = 10
-    } = req.query;
-
-    const query = {};
-
-    if (instructor) query.instructor = instructor;
-    if (course) query.course = course;
-    if (department) query.department = department;
-    if (status) query.status = status;
-    if (academicYear) query.academicYear = academicYear;
-    if (semester) query.semester = semester;
-
-    // If user is not admin, only show their evaluations or public ones
-    if (req.user.role !== 'admin') {
-      query.$or = [
-        { instructor: req.user.id },
-        { status: 'active' }
-      ];
+    // Parse and validate pagination parameters
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 10;
+    
+    // Validate pagination values
+    if (page < 1 || limit < 1 || limit > 100) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid pagination parameters'
+      });
     }
 
+    // Build query options
     const options = {
-      page: parseInt(page, 10),
-      limit: parseInt(limit, 10),
+      page,
+      limit,
       sort: { createdAt: -1 },
       populate: [
-        { path: 'instructor', select: 'fullName email' },
-        { path: 'course', select: 'name code' },
-        { path: 'department', select: 'name' }
-      ]
+        { 
+          path: 'instructor', 
+          select: 'fullName email department'
+        },
+        {
+          path: 'courseCode',
+          select: 'name code'
+        }
+      ],
+      select: '-__v' // Exclude version key
     };
 
-    const forms = await EvaluationForm.paginate(query, options);
+    // Build query based on user role
+    const query = {};
 
-    res.status(200).json({
+    // Admin and quality_officer can see all evaluations
+    if (['admin', 'quality_officer', 'department_head'].includes(req.user.role)) {
+      // If department head, show evaluations from their department only
+      if (req.user.role === 'department_head' && req.user.department) {
+        query['instructor.department'] = req.user.department;
+      }
+      // For admin and quality_officer, query remains empty to show all
+    } else {
+      // For other roles (instructor, student, etc.), only show their own evaluations
+      query.instructor = req.user.id;
+    }
+
+    // Execute query with pagination
+    const evaluations = await EvaluationForm.paginate(query, options);
+    
+    // Format response
+    const response = {
       success: true,
-      data: forms
-    });
+      data: {
+        docs: evaluations.docs,
+        totalDocs: evaluations.totalDocs,
+        limit: evaluations.limit,
+        totalPages: evaluations.totalPages,
+        page: evaluations.page,
+        pagingCounter: evaluations.pagingCounter,
+        hasPrevPage: evaluations.hasPrevPage,
+        hasNextPage: evaluations.hasNextPage,
+        prevPage: evaluations.prevPage,
+        nextPage: evaluations.nextPage
+      }
+    };
+
+    res.status(200).json(response);
   } catch (error) {
-    console.error('Error fetching evaluation forms:', error);
+    console.error('Error fetching evaluations:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch evaluation forms',
-      error: error.message
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
     });
   }
 });
-
 // @desc    Get single evaluation form
 // @route   GET /api/evaluation-forms/:id
 // @access  Private
@@ -134,8 +157,7 @@ export const getEvaluationFormById = asyncHandler(async (req, res) => {
   try {
     const form = await EvaluationForm.findById(req.params.id)
       .populate('instructor', 'fullName email')
-      .populate('course', 'name code')
-      .populate('department', 'name')
+      .populate('courseCode', 'name code')
       .populate('responses.student', 'fullName email');
 
     if (!form) {
@@ -146,11 +168,15 @@ export const getEvaluationFormById = asyncHandler(async (req, res) => {
     }
 
     // Check permissions
-    if (
-      form.instructor._id.toString() !== req.user.id.toString() &&
-      req.user.role !== 'admin' &&
-      form.status !== 'active'
-    ) {
+    // Allow access to: admin, quality_officer, department_head, and the instructor who created it
+    const isAuthorized = 
+      req.user.role === 'admin' ||
+      req.user.role === 'quality_officer' ||
+      req.user.role === 'department_head' ||
+      form.instructor._id.toString() === req.user.id.toString() ||
+      form.status === 'active';
+    
+    if (!isAuthorized) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to access this evaluation form'
@@ -241,10 +267,11 @@ export const deleteEvaluationForm = asyncHandler(async (req, res) => {
       });
     }
 
-    await form.remove();
+    await EvaluationForm.findByIdAndDelete(req.params.id);
 
     res.status(200).json({
       success: true,
+      message: 'Evaluation form deleted successfully',
       data: {}
     });
   } catch (error) {

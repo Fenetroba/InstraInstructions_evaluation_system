@@ -176,9 +176,37 @@ const CreateEvaluation = () => {
 
     setIsSubmitting(true);
     try {
-      await dispatch(createEvaluation(formData)).unwrap();
+      // Prepare the data to match the backend model
+      const evaluationData = {
+        title: formData.title,
+        description: formData.description,
+        academicYear: formData.academicYear,
+        semester: formData.semester,
+        category: formData.category,
+        instructor: formData.instructor, // This should be the instructor's ID
+        courseCode: formData.courseCode,
+        department: formData.department, // This should be the department ID
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+        criteria: formData.criteria,
+        status: 'draft' // Default status
+      };
+
+      console.log('Submitting evaluation data:', evaluationData);
+      
+      const resultAction = await dispatch(createEvaluation(evaluationData));
+      const result = resultAction.payload;
+      
+      if (result?.success) {
+        console.log('Evaluation created successfully:', result.data);
+        // Optionally reset form or redirect
+        // resetForm();
+      } else {
+        console.error('Failed to create evaluation:', result?.message || 'Unknown error');
+      }
     } catch (error) {
-      console.error("Failed to create evaluation:", error);
+      console.error("Error in handleSubmit:", error);
+      toast.error(error.message || 'Failed to create evaluation');
     } finally {
       setIsSubmitting(false);
     }

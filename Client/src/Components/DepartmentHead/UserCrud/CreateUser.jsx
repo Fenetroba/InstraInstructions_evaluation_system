@@ -21,7 +21,7 @@ const CreateUser = ({ onSuccess }) => {
     username: '',
     email: '',
     password: 'Osu@1234',
-    role: 'instructor',
+    role: '',
     department: ''
   });
   const [formErrors, setFormErrors] = useState({});
@@ -78,7 +78,7 @@ const CreateUser = ({ onSuccess }) => {
           username: '',
           email: '',
           password: '',
-          role: 'instructor',
+          role: '',
           department: ''
         });
         setFormErrors({});

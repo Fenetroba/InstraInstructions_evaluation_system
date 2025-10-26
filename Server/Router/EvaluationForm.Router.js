@@ -35,20 +35,7 @@ const validateResponse = [
 router.use(protect);
 
 // Get all evaluation forms
-router.get(
-  '/',
-  [
-    query('instructor').optional().isMongoId(),
-    query('course').optional().isMongoId(),
-    query('department').optional().isMongoId(),
-    query('status').optional().isIn(['draft', 'active', 'completed', 'archived']),
-    query('page').optional().isInt({ min: 1 }),
-    query('limit').optional().isInt({ min: 1, max: 100 }),
-    validateRequest
-  ],
-  getEvaluationForms
-);
-
+router.get('/', validateRequest, getEvaluationForms);
 // Get single evaluation form
 router.get(
   '/:id',

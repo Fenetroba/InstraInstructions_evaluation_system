@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-
+import mongoosePaginate from 'mongoose-paginate-v2';
 const evaluationSchema = new mongoose.Schema({
   // Basic Information
   title: {
@@ -27,16 +27,14 @@ const evaluationSchema = new mongoose.Schema({
   // Relationships
   instructor: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'UserAuth',
+    ref: 'User',
     required: [true, 'Instructor is required']
   },
   courseCode: {
     type: String,
-    default:''
   },
   department: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Department',
+    type: String,
     required: [true, 'Department is required']
   },
 
@@ -108,7 +106,7 @@ const evaluationSchema = new mongoose.Schema({
   responses: [{
     student: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'UserAuth',
+      ref: 'User',
       required: true
     },
     answers: [{
@@ -145,22 +143,22 @@ const evaluationSchema = new mongoose.Schema({
   // Metadata
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'UserAuth',
+    ref: 'User',
     required: true
   },
   updatedBy: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'UserAuth'
+    ref: 'User'
   }
 }, {
   timestamps: true,
   toJSON: { virtuals: true },
   toObject: { virtuals: true }
 });
-
+evaluationSchema.plugin(mongoosePaginate);
 // Indexes for better query performance
 evaluationSchema.index({ instructor: 1, status: 1 });
-evaluationSchema.index({ course: 1, academicYear: 1, semester: 1 });
+evaluationSchema.index({ courseCode: 1, academicYear: 1, semester: 1 });
 evaluationSchema.index({ status: 1, endDate: 1 });
 
 // Virtual for duration in days

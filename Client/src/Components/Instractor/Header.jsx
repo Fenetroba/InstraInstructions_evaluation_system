@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import { FiMenu, FiX, FiBell, FiUser, FiLogOut, FiChevronDown } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
 import logo from '../../assets/logo_2.png';
+import { useDispatch } from 'react-redux';
+import { logoutUser } from '@/Store/AuthUserSlice';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-
+const dispatch=useDispatch()
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   const toggleProfile = () => setIsProfileOpen(!isProfileOpen);
 
@@ -16,6 +18,9 @@ const Header = () => {
     { name: 'Evaluations', path: '/evaluations' },
     { name: 'Reports', path: '/reports' },
   ];
+  const LogOutHandler=()=>{
+    dispatch(logoutUser())
+  }
 
   return (
     <header className='bg-(--six) shadow-md'>
@@ -71,7 +76,7 @@ const Header = () => {
                     <FiUser className='h-5 w-5 text-(--six)' />
                   </div>
                   <span className='hidden md:inline-block ml-2 text-white text-sm font-medium'>
-                    Admin User
+                     User
                     <FiChevronDown className='ml-1 inline-block' />
                   </span>
                 </button>
@@ -86,17 +91,11 @@ const Header = () => {
                   >
                     Your Profile
                   </Link>
-                  <Link
-                    to='/settings'
-                    className='block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100'
-                  >
-                    Settings
-                  </Link>
+                 
                   <button
-                    onClick={() => {
-                      // Handle logout
-                      console.log('Logout clicked');
-                    }}
+                    onClick={
+                      LogOutHandler
+                    }
                     className='w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center'
                   >
                     <FiLogOut className='mr-2' />

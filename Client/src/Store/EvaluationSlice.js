@@ -2,15 +2,27 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from '../Lib/Axios';
 import { toast } from 'sonner';
 
-
+const API_URL = '/evaluation';
 
 // Async thunks
 export const fetchAllEvaluations = createAsyncThunk(
   'evaluations/fetchAll',
-  async (_, { rejectWithValue }) => {
+  async ({ page = 1, limit = 10 } = {}, { rejectWithValue }) => {
     try {
-      const response = await axios.get('/evaluation');
-      return response.data;
+      const response = await axios.get(`${API_URL}?page=${page}&limit=${limit}`);
+      
+      // API returns { success: true, data: { docs, totalDocs, ... } }
+      const data = response.data.data || response.data;
+      
+      // Ensure we always return an array for docs
+      const result = {
+        docs: Array.isArray(data.docs) ? data.docs : data.docs || [],
+        totalDocs: data.totalDocs || 0,
+        page: data.page || 1,
+        totalPages: data.totalPages || 1
+      };
+      
+      return result;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch evaluations');
     }
@@ -22,7 +34,8 @@ export const fetchEvaluationById = createAsyncThunk(
   async (id, { rejectWithValue }) => {
     try {
       const response = await axios.get(`${API_URL}/${id}`);
-      return response.data;
+      // API returns { success: true, data: { ... } }
+      return response.data.data || response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch evaluation');
     }
@@ -31,13 +44,16 @@ export const fetchEvaluationById = createAsyncThunk(
 
 export const createEvaluation = createAsyncThunk(
   'evaluations/create',
-  async (evaluationData, { rejectWithValue }) => {
+  async (evaluationData, { rejectWithValue, dispatch }) => {
     try {
       const response = await axios.post('/evaluation', evaluationData);
+      
+      // After successful creation, fetch the latest evaluations
+      await dispatch(fetchAllEvaluations()).unwrap();
+      
       toast.success('Evaluation created successfully');
       return response.data;
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to create evaluation');
       return rejectWithValue(error.response?.data?.message || 'Failed to create evaluation');
     }
   }
@@ -86,11 +102,15 @@ export const submitEvaluationResponse = createAsyncThunk(
 );
 
 const initialState = {
-  evaluations: [],
-  evaluation: null,
-  status: 'idle', // 'idle' | 'loading' | 'succeeded' | 'failed'
-  error: null,
-  message: null,
+  evaluations: {
+    docs: [],  // Make sure this is initialized as an array
+    totalDocs: 0,
+    page: 1,
+    totalPages: 1
+  },
+  evaluation: null, // Single evaluation details
+  status: 'idle',
+  error: null
 };
 
 const evaluationSlice = createSlice({
@@ -109,12 +129,24 @@ const evaluationSlice = createSlice({
   extraReducers: (builder) => {
     // Fetch All Evaluations
     builder
-      .addCase(fetchAllEvaluations.pending, (state) => {
+  .addCase(fetchAllEvaluations.pending, (state) => {
         state.status = 'loading';
       })
       .addCase(fetchAllEvaluations.fulfilled, (state, action) => {
         state.status = 'succeeded';
-        state.evaluations = action.payload.data || [];
+        // Ensure we're properly handling both array and paginated responses
+        if (Array.isArray(action.payload)) {
+          state.evaluations.docs = action.payload;
+          state.evaluations.totalDocs = action.payload.length;
+          state.evaluations.totalPages = 1;
+        } else if (action.payload && typeof action.payload === 'object') {
+          // Handle paginated response object
+          state.evaluations.docs = action.payload.docs || [];
+          state.evaluations.totalDocs = action.payload.totalDocs || 0;
+          state.evaluations.page = action.payload.page || 1;
+          state.evaluations.totalPages = action.payload.totalPages || 1;
+        }
+        state.error = null;
       })
       .addCase(fetchAllEvaluations.rejected, (state, action) => {
         state.status = 'failed';
@@ -127,7 +159,8 @@ const evaluationSlice = createSlice({
       })
       .addCase(fetchEvaluationById.fulfilled, (state, action) => {
         state.status = 'succeeded';
-        state.evaluation = action.payload.data;
+        state.evaluation = action.payload;
+        state.error = null;
       })
       .addCase(fetchEvaluationById.rejected, (state, action) => {
         state.status = 'failed';
@@ -140,7 +173,14 @@ const evaluationSlice = createSlice({
       })
       .addCase(createEvaluation.fulfilled, (state, action) => {
         state.status = 'succeeded';
-        state.evaluations.push(action.payload.data);
+        // Check if evaluations.docs exists and is an array before pushing
+        if (!state.evaluations.docs) {
+          state.evaluations.docs = [];
+        }
+        if (action.payload.data) {
+          state.evaluations.docs.unshift(action.payload.data); // Add new evaluation at the beginning
+          state.evaluations.totalDocs += 1;
+        }
         state.message = 'Evaluation created successfully';
       })
       .addCase(createEvaluation.rejected, (state, action) => {
@@ -154,11 +194,11 @@ const evaluationSlice = createSlice({
       })
       .addCase(updateEvaluation.fulfilled, (state, action) => {
         state.status = 'succeeded';
-        const index = state.evaluations.findIndex(
-          
+        const index = state.evaluations.docs?.findIndex(
+          (evaluation) => evaluation._id === action.payload.data._id
         );
-        if (index !== -1) {
-          state.evaluations[index] = action.payload.data;
+        if (index !== -1 && state.evaluations.docs) {
+          state.evaluations.docs[index] = action.payload.data;
         }
         state.message = 'Evaluation updated successfully';
       })
@@ -173,9 +213,12 @@ const evaluationSlice = createSlice({
       })
       .addCase(deleteEvaluation.fulfilled, (state, action) => {
         state.status = 'succeeded';
-        state.evaluations = state.evaluations.filter(
-         
-        );
+        if (state.evaluations.docs) {
+          state.evaluations.docs = state.evaluations.docs.filter(
+            (evaluation) => evaluation._id !== action.payload
+          );
+          state.evaluations.totalDocs = Math.max(0, state.evaluations.totalDocs - 1);
+        }
         state.message = 'Evaluation deleted successfully';
       })
       .addCase(deleteEvaluation.rejected, (state, action) => {
