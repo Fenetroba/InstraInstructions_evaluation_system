@@ -1,7 +1,17 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Users, ClipboardCheck, FileText, TrendingUp, User } from 'lucide-react';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchAllUsers } from '@/Store/UsersDataSlice';
 
 const Analysis = () => {
+  const {users}=useSelector(state=>state.usersData)
+  const dispatch=useDispatch()
+  useEffect(() => {
+    dispatch(fetchAllUsers());
+  }, [dispatch]);
+  const instructors = users.filter(user => user.role === "instructor");
+  const students = users.filter(user => user.role === "Student");
+  console.log(instructors.length)
   return (
     <div className="p-6">
       {/* Stats Cards */}
@@ -10,7 +20,7 @@ const Analysis = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Total Instructors</p>
-              <p className="text-3xl font-bold text-gray-900">1</p>
+              <p className="text-3xl font-bold text-gray-900">{instructors.length}</p>
             </div>
             <div className="bg-blue-100 rounded-full p-3">
               <Users className="h-8 w-8 text-blue-600" />
@@ -46,7 +56,7 @@ const Analysis = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Total Students</p>
-              <p className="text-3xl font-bold text-gray-900">4</p>
+              <p className="text-3xl font-bold text-gray-900">{students.length}</p>
             </div>
             <div className="bg-orange-100 rounded-full p-3">
               <User className="h-8 w-8 text-orange-600" />
