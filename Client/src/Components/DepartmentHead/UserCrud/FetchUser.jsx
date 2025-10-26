@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Plus, Edit, Trash2 } from "lucide-react";
+import { Plus, Edit, Trash2, Loader2, LoaderPinwheel } from "lucide-react";
 import { fetchAllUsers } from "../../../Store/UsersDataSlice";
 import FetchSingleGroupUser from "./FetchSingleGroupUser";
 import { useNavigate } from "react-router-dom";
@@ -89,7 +89,14 @@ const FetchUser = () => {
     // Add your delete logic here
   };
 
-  if (isLoading) return <div className="p-4">Loading users...</div>;
+  if (isLoading)
+    return (
+      <div className="flex items-center justify-center h-64">
+      
+        <LoaderPinwheel className="h-18 w-18 animate-spin shadow-lg rounded-full shadow-green-200" />
+   
+      </div>
+    );
   if (error) return <div className="p-4 text-red-500">Error: {error}</div>;
 
   return (
@@ -150,71 +157,74 @@ const FetchUser = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredUsers.map((user) => (
-                  <tr
-                    key={user._id}
-                    className="hover:bg-gray-50 transition-colors"
-                  >
-                    <td className="py-3 px-4 border-b">
-                      {user.fullName || "N/A"}
-                    </td>
-                    <td className="py-3 px-4 border-b">
-                      {user.username || "N/A"}
-                    </td>
-                    <td className="py-3 px-4 border-b">
-                      <span
-                        className={`px-2 py-1 text-xs rounded-full ${
-                          user.role === "admin"
-                            ? "bg-blue-100 text-blue-800"
-                            : user.role === "instructor"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-gray-100 text-gray-800"
-                        }`}
+                {filteredUsers.map(
+                  (user) =>
+                    user.role !== "department_head" && (
+                      <tr
+                        key={user._id}
+                        className="hover:bg-gray-50 transition-colors"
                       >
-                        {user.role || "N/A"}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 border-b">
-                      {user.email || "N/A"}
-                    </td>
-                    <td className="py-3 px-4 border-b">
-                      <div className="flex items-center">
-                        <button
-                          onClick={() => toggleRow(user._id)}
-                          className="text-gray-500 hover:text-blue-500 transition-colors p-1"
-                        >
-                          <Plus
-                            className={`h-5 w-5 transition-transform duration-200 ${
-                              expandedRow === user._id ? "rotate-45" : ""
+                        <td className="py-3 px-4 border-b">
+                          {user.fullName || "N/A"}
+                        </td>
+                        <td className="py-3 px-4 border-b">
+                          {user.username || "N/A"}
+                        </td>
+                        <td className="py-3 px-4 border-b">
+                          <span
+                            className={`px-2 py-1 text-xs rounded-full ${
+                              user.role === "admin"
+                                ? "bg-blue-100 text-blue-800"
+                                : user.role === "instructor"
+                                ? "bg-green-100 text-green-800"
+                                : "bg-gray-100 text-gray-800"
                             }`}
-                          />
-                        </button>
-                        {expandedRow === user._id && (
-                          <div className="flex gap-2 ml-2">
+                          >
+                            {user.role || "N/A"}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 border-b">
+                          {user.email || "N/A"}
+                        </td>
+                        <td className="py-3 px-4 border-b">
+                          <div className="flex items-center">
                             <button
-                              onClick={() =>
-                                navigate(`/users/edit/${user._id}`)
-                              }
-                              className="text-blue-500 hover:text-blue-700 transition-colors p-1"
-                              title="Edit user"
+                              onClick={() => toggleRow(user._id)}
+                              className="text-gray-500 hover:text-blue-500 transition-colors p-1"
                             >
-                              <Edit className="h-5 w-5" />
+                              <Plus
+                                className={`h-5 w-5 transition-transform duration-200 ${
+                                  expandedRow === user._id ? "rotate-45" : ""
+                                }`}
+                              />
                             </button>
-                            <DeleteUser
-                              userId={user._id}
-                              onDelete={async (userId) => {
-                                // Call your delete API here
-                                await deleteUserFromAPI(userId);
-                                // Optionally refresh the user list
-                                dispatch(fetchAllUsers());
-                              }}
-                            />
+                            {expandedRow === user._id && (
+                              <div className="flex gap-2 ml-2">
+                                <button
+                                  onClick={() =>
+                                    navigate(`/users/edit/${user._id}`)
+                                  }
+                                  className="text-blue-500 hover:text-blue-700 transition-colors p-1"
+                                  title="Edit user"
+                                >
+                                  <Edit className="h-5 w-5" />
+                                </button>
+                                <DeleteUser
+                                  userId={user._id}
+                                  onDelete={async (userId) => {
+                                    // Call your delete API here
+                                    await deleteUserFromAPI(userId);
+                                    // Optionally refresh the user list
+                                    dispatch(fetchAllUsers());
+                                  }}
+                                />
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                        </td>
+                      </tr>
+                    )
+                )}
               </tbody>
             </table>
           )}

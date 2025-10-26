@@ -14,6 +14,10 @@ import EditUser from './Components/DepartmentHead/UserCrud/EditUser'
 import ViewsinglIvaluation from './Components/QualityOffice/CrudEvaluatinForm/ViewsinglIvaluation'
 import PageProtector from './Page/Alluser/PageProtector'
 import { Loader2 } from 'lucide-react'
+import StudentHome from './Page/Student/Home'
+import HumanResourcerHome from './Page/HumanResource/Home'
+import CollageDeanHome from './Page/CollegeDien/Home'
+import ViceAcademyHome from './Page/ViceAcademy/Home'
 
 const App = () => {
   const dispatch=useDispatch()
@@ -76,7 +80,7 @@ const App = () => {
        path='/instractor-home' 
        element={ 
          <PageProtector allowedRoles={['instructor', 'admin']}>
-           <InstractorHome/>
+           <InstractorHome user={user}/>
          </PageProtector>
        }
      />
@@ -84,7 +88,39 @@ const App = () => {
        path='/department-head-home' 
        element={ 
          <PageProtector allowedRoles={['department_head', 'admin']}>
-           <DepartmentHeadHome/>
+           <DepartmentHeadHome user={user}/>
+         </PageProtector>
+       }
+     />
+     <Route 
+       path='/student-home' 
+       element={ 
+         <PageProtector allowedRoles={['student', 'admin']}>
+           <StudentHome user={user}/>
+         </PageProtector>
+       }
+     />
+     <Route 
+       path='/human-resource-home' 
+       element={ 
+         <PageProtector allowedRoles={['human_resours', 'admin']}>
+           <HumanResourcerHome user={user}/>
+         </PageProtector>
+       }
+     />
+     <Route 
+       path='/college-dean-home' 
+       element={ 
+         <PageProtector allowedRoles={['college_dean', 'admin']}>
+           <CollageDeanHome user={user}/>
+         </PageProtector>
+       }
+     />
+     <Route 
+       path='/vice-academy-home' 
+       element={ 
+         <PageProtector allowedRoles={['vice_academy', 'admin']}>
+           <ViceAcademyHome user={user}/>
          </PageProtector>
        }
      />

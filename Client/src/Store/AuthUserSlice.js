@@ -96,8 +96,9 @@ const authSlice = createSlice({
     });
     builder.addCase(register.fulfilled, (state, { payload }) => {
       state.loading = false;
-      state.isAuthenticated = true;
-      state.user = payload.user;
+      // Don't authenticate - just create the user without logging them in
+      // This is for admin creating users, not self-registration
+      state.error = null;
     });
     builder.addCase(register.rejected, (state, { payload }) => {
       state.loading = false;

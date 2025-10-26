@@ -58,7 +58,7 @@ const PageProtector = ({
   }, [isAuthenticated, user, loading, allowedRoles, navigate, requireAuth, redirectTo]);
 
   // Show loading spinner while checking authentication
-  if (loading) {
+  if (loading && !isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">

@@ -40,9 +40,9 @@ const CreateUser = ({ onSuccess }) => {
     { value: 'department_head', label: 'Department Head' },
     { value: 'quality_officer', label: 'Quality Officer'},
     { value: 'Student', label: 'Student' },
-    { value: 'Colleg_dean', label: 'Colleg Dean' },
+    { value: 'college_dean', label: 'College Dean' },
     { value: 'Human_resours', label: 'Human Resours' },
-    { value: 'vice_Academy', label: 'Vice Academy' },
+    { value: 'Vice_academy', label: 'Vice Academy' },
     
   ];
 
