@@ -22,6 +22,9 @@ import ViceAcademyHome from './Page/ViceAcademy/Home'
 const App = () => {
   const dispatch=useDispatch()
   const {user,isAuthenticated,loading}=useSelector(state=>state.auth)
+  if(!user){
+    <div>Loading......</div>
+  }
   
   useEffect(()=>{
     dispatch(profile())
@@ -72,7 +75,7 @@ const App = () => {
        path='/quality-office-home' 
        element={ 
          <PageProtector allowedRoles={['quality_officer', 'admin']}>
-           <QualityOfficeHome/>
+           <QualityOfficeHome user={user}/>
          </PageProtector>
        }
      />

@@ -18,7 +18,6 @@ const validateEvaluationForm = [
   body('title').notEmpty().withMessage('Title is required'),
   body('academicYear').notEmpty().withMessage('Academic year is required'),
   body('semester').isIn(['Spring', 'Summer', 'Fall']).withMessage('Invalid semester'),
-  body('instructor').isMongoId().withMessage('Invalid instructor ID'),
   body('department').isMongoId().withMessage('Invalid department ID'),
   body('startDate').isISO8601().withMessage('Invalid start date'),
   body('endDate').isISO8601().withMessage('Invalid end date'),
@@ -47,7 +46,7 @@ router.get(
 );
 
 // Admin-only routes
-router.use(authorize('admin', 'department_head'));
+router.use(authorize('admin', 'quality_officer'));
 
 // Create new evaluation form
 router.post('/', validateEvaluationForm, createEvaluationForm);

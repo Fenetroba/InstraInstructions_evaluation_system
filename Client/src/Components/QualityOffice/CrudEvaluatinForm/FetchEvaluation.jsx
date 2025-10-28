@@ -12,6 +12,7 @@ const FetchEvaluation = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const { evaluations, status, error } = useSelector((state) => state.evaluations);
+  console.log(evaluations)
   const [isDeleting, setIsDeleting] = useState({});
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
@@ -171,21 +172,21 @@ const FetchEvaluation = () => {
               </div>
             )}
             <table className="w-full">
-              <thead className="bg-gray-50">
+              <thead className="bg-(--six)">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">
                     Title
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">
                     Course Code
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Type
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">
+                    Department
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">
                     Date
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-100 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -205,7 +206,7 @@ const FetchEvaluation = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                        {getCategoryLabel(evaluation.category)}
+                        {getCategoryLabel(evaluation?.instructor?.department)}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

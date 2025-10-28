@@ -128,9 +128,9 @@ const ViewsinglIvaluation = () => {
 
   return (
     <div className="container mx-auto p-4">
-      <div className="bg-white rounded-lg shadow-sm">
+      <div className="bg-(white) rounded-lg shadow-sm">
         {/* Header */}
-        <div className="p-6 border-b border-gray-200">
+        <div className="p-6 border-b bg-(--two) border-gray-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Button
@@ -142,8 +142,8 @@ const ViewsinglIvaluation = () => {
                 <ArrowLeft className="h-5 w-5" />
               </Button>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">{evaluation.title}</h1>
-                <p className="text-gray-600 mt-1">{evaluation.description || 'No description provided'}</p>
+                <h1 className="text-2xl font-bold text-gray-900">{evaluation.title}</h1>
+                <p className="text-gray-600 text-[15px] mt-1">{evaluation.description ||''}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -153,10 +153,10 @@ const ViewsinglIvaluation = () => {
         </div>
 
         {/* Status Info Bar */}
-        <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mx-6 mt-4 rounded">
+        <div className="bg-(--six) border-l-4 border-(--two) p-4 mx-6 mt-4 rounded">
           <div className="flex items-start gap-2">
-            <Clock className="h-5 w-5 text-blue-600 mt-0.5" />
-            <div className="text-sm text-blue-800">
+            <Clock className="h-5 w-5 text-(--two) mt-0.5" />
+            <div className="text-sm text-(--one) ">
               <p className="font-semibold">Status: {evaluation.status}</p>
               <p className="mt-1">{getStatusInfo(evaluation.status)}</p>
             </div>
@@ -166,13 +166,13 @@ const ViewsinglIvaluation = () => {
         {/* Tabs */}
         <div className="border-b border-gray-200 px-6 mt-6">
           <div className="flex gap-2">
-            {['overview', 'criteria', 'questions', 'responses'].map((tab) => (
+            {['overview', 'criteria', 'questions'].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 className={`px-4 py-3 text-sm font-medium transition-colors capitalize ${
                   activeTab === tab
-                    ? 'text-blue-600 border-b-2 border-blue-600'
+                    ? 'text-green-600 border-b-2 border-green-600'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
@@ -316,8 +316,8 @@ const ViewsinglIvaluation = () => {
                   <div key={index} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
                     <div className="flex items-start justify-between mb-2">
                       <div>
-                        <h4 className="font-semibold text-gray-900">{criterion.category}</h4>
-                        <p className="text-gray-600 text-sm mt-1">{criterion.description}</p>
+                        <h4 className="font-semibold  text-[19px] text-gray-900">{criterion.category}</h4>
+                        <p className="text-gray-300 text-sm mt-1">{criterion.description}</p>
                       </div>
                       <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-semibold">
                         {criterion.weight}%
@@ -378,53 +378,7 @@ const ViewsinglIvaluation = () => {
             </div>
           )}
 
-          {activeTab === 'responses' && (
-            <div className="space-y-4">
-              {evaluation.responses && evaluation.responses.length > 0 ? (
-                evaluation.responses.map((response, index) => (
-                  <div key={index} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                          <Users className="h-5 w-5 text-blue-600" />
-                        </div>
-                        <div>
-                          <p className="font-semibold text-gray-900">
-                            {response.student?.fullName || 'Anonymous'}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            {response.student?.email || ''}
-                          </p>
-                        </div>
-                      </div>
-                      <span className="text-xs text-gray-500">
-                        {formatDateTime(response.submittedAt)}
-                      </span>
-                    </div>
-                    <div className="space-y-2">
-                      {response.answers && response.answers.map((answer, ansIndex) => (
-                        <div key={ansIndex} className="bg-gray-50 p-3 rounded text-sm">
-                          <p className="text-gray-600">
-                            <span className="font-semibold">Answer {ansIndex + 1}:</span>{' '}
-                            {typeof answer.answer === 'object' 
-                              ? JSON.stringify(answer.answer) 
-                              : answer.answer}
-                          </p>
-                          {answer.score !== undefined && (
-                            <p className="text-xs text-gray-500 mt-1">Score: {answer.score}</p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-10 text-gray-500">
-                  No responses submitted yet.
-                </div>
-              )}
-            </div>
-          )}
+          
         </div>
       </div>
     </div>

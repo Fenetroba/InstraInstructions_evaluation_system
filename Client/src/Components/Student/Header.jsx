@@ -14,9 +14,7 @@ const dispatch=useDispatch()
 
   const navLinks = [
     { name: 'Dashboard', path: '/quality-office-home' },
-    { name: 'Instructors', path: '/instructors' },
-    { name: 'Evaluations', path: '/evaluations' },
-    { name: 'Reports', path: '/reports' },
+    
   ];
   const LogOutHandler=()=>{
     dispatch(logoutUser())

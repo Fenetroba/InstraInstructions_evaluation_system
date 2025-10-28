@@ -24,18 +24,18 @@ const evaluationSchema = new mongoose.Schema({
     }
   },
 
-  // Relationships
-  instructor: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: [true, 'Instructor is required']
-  },
   courseCode: {
     type: String,
   },
   department: {
     type: String,
     required: [true, 'Department is required']
+  },
+
+    instructor: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: [true, 'Instructor is required']
   },
 
   // Evaluation Criteria

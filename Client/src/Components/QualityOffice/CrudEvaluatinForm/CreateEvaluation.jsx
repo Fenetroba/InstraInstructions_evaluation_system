@@ -56,7 +56,6 @@ const CreateEvaluation = () => {
     academicYear: new Date().getFullYear().toString(),
     semester: "Spring",
     category: "",
-    instructor: "",
     courseCode: "",
     department: "",
     startDate: "",
@@ -80,7 +79,7 @@ const CreateEvaluation = () => {
 
 
   useEffect(() => {
-    if (status === "succeeded") {
+    if (status === "succeeded" && status==="success" ) {
       toast.success("Evaluation created successfully");
     } else if (status === "failed") {
       toast.error(error || "Failed to create evaluation");
@@ -144,7 +143,6 @@ const CreateEvaluation = () => {
     const newErrors = {};
     if (!formData.title) newErrors.title = "Title is required";
     if (!formData.category) newErrors.category = "Category is required";
-    if (!formData.instructor) newErrors.instructor = "Instructor is required";
     if (!formData.courseCode) newErrors.courseCode = "Course is required";
     if (!formData.department) newErrors.department = "Department is required";
     if (!formData.startDate) newErrors.startDate = "Start date is required";
@@ -183,7 +181,6 @@ const CreateEvaluation = () => {
         academicYear: formData.academicYear,
         semester: formData.semester,
         category: formData.category,
-        instructor: formData.instructor, // This should be the instructor's ID
         courseCode: formData.courseCode,
         department: formData.department, // This should be the department ID
         startDate: formData.startDate,
@@ -263,34 +260,6 @@ const CreateEvaluation = () => {
               )}
             </div>
 
-            {/* Instructor */}
-            <div className="space-y-2">
-              <Label htmlFor="instructor">Instructor</Label>
-              <Select
-                value={formData.instructor}
-                onValueChange={(value) =>
-                  handleSelectChange("instructor", value)
-                }
-              >
-                <SelectTrigger
-                  className={errors.instructor ? "border-red-500" : ""}
-                >
-                  <SelectValue placeholder="Select an instructor" />
-                </SelectTrigger>
-                <SelectContent>
-                  {instructors.map((instructor) => (
-                    <SelectItem key={instructor._id} value={instructor._id}>
-                      {instructor.fullName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.instructor && (
-                <p className="text-sm text-red-500">{errors.instructor}</p>
-              )}
-            </div>
-
-     
             {/* Course - Only show if category is not 'students' */}
             {formData.category === "students" && (
               <div className="space-y-2">

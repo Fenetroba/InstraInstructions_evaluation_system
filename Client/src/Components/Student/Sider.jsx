@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/sheet";
 import { Plus, List, Hamburger, Menu } from "lucide-react";
 import { Button } from "../ui/button";
+import Do_evaluating from "./Do_evaluating";
 
 const Sider = () => {
   const [open, setOpen] = useState(false);
@@ -25,7 +26,9 @@ const Sider = () => {
         </SheetTrigger>
         <SheetContent side="bottom" className="bg-(--one) max-h-[90vh] overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>Manage Evaluation Forms</SheetTitle>
+            <SheetTitle>
+              <Do_evaluating/>
+            </SheetTitle>
            
           </SheetHeader>
         </SheetContent>

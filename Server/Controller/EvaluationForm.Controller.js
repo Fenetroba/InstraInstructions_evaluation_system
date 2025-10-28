@@ -108,16 +108,32 @@ export const getEvaluationForms = asyncHandler(async (req, res) => {
     // Build query based on user role
     const query = {};
 
-    // Admin and quality_officer can see all evaluations
-    if (['admin', 'quality_officer', 'department_head'].includes(req.user.role)) {
-      // If department head, show evaluations from their department only
-      if (req.user.role === 'department_head' && req.user.department) {
-        query['instructor.department'] = req.user.department;
-      }
-      // For admin and quality_officer, query remains empty to show all
-    } else {
-      // For other roles (instructor, student, etc.), only show their own evaluations
-      query.instructor = req.user.id;
+    switch (req.user.role) {
+      case 'Student':
+        // Students see active evaluations for their department, within the valid date range,
+        // and which they have not yet completed.
+        query.status = 'active';
+        query.department = req.user.department;
+        query.startDate = { $lte: new Date() };
+        query.endDate = { $gte: new Date() };
+        // Exclude evaluations the student has already responded to
+        query['responses.student'] = { $ne: req.user.id };
+        break;
+      case 'department_head':
+        // Department heads see evaluations from their department
+        if (req.user.department) {
+          query.department = req.user.department;
+        }
+        break;
+      case 'instructor':
+        // Instructors see evaluations they are assigned to
+        query.instructor = req.user.id;
+        break;
+      // Admin and quality_officer can see all evaluations (no query modifications needed)
+      case 'Student':
+      case 'quality_officer':
+      default:
+        break;
     }
 
     // Execute query with pagination
@@ -170,7 +186,7 @@ export const getEvaluationFormById = asyncHandler(async (req, res) => {
     // Check permissions
     // Allow access to: admin, quality_officer, department_head, and the instructor who created it
     const isAuthorized = 
-      req.user.role === 'admin' ||
+      req.user.role === 'Student' ||
       req.user.role === 'quality_officer' ||
       req.user.role === 'department_head' ||
       form.instructor._id.toString() === req.user.id.toString() ||
@@ -372,4 +388,3 @@ export const submitResponse = asyncHandler(async (req, res) => {
     });
   }
 });
-
