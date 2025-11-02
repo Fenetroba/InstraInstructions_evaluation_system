@@ -7,22 +7,32 @@ const API_URL = '/evaluation';
 // Async thunks
 export const fetchAllEvaluations = createAsyncThunk(
   'evaluations/fetchAll',
-  async ({ page = 1, limit = 10 } = {}, { rejectWithValue }) => {
+  async ({ page = 1, limit = 10, instructorId } = {}, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`${API_URL}?page=${page}&limit=${limit}`);
+      let url = `${API_URL}?page=${page}&limit=${limit}`;
       
-      // API returns { success: true, data: { docs, totalDocs, ... } }
+      // If instructorId is provided, fetch evaluations for that instructor
+      if (instructorId) {
+        url = `${API_URL}/instructor/${instructorId}?page=${page}&limit=${limit}`;
+      }
+      
+      const response = await axios.get(url);
+      
+      // Handle both array and paginated responses
       const data = response.data.data || response.data;
       
-      // Ensure we always return an array for docs
-      const result = {
+      // If it's an array, return it directly
+      if (Array.isArray(data)) {
+        return data;
+      }
+      
+      // Otherwise, handle as paginated response
+      return {
         docs: Array.isArray(data.docs) ? data.docs : data.docs || [],
         totalDocs: data.totalDocs || 0,
         page: data.page || 1,
         totalPages: data.totalPages || 1
       };
-      
-      return result;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch evaluations');
     }
@@ -100,6 +110,7 @@ export const submitEvaluationResponse = createAsyncThunk(
     }
   }
 );
+
 
 const initialState = {
   evaluations: {

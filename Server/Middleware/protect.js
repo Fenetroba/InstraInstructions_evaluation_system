@@ -48,11 +48,23 @@ export const protect = async (req, res, next) => {
 // Grant access to specific roles
 export const authorize = (...roles) => {
   return (req, res, next) => {
-    if (!roles.includes(req.user.role)) {
+    // If no roles are specified, allow access
+    if (!roles || roles.length === 0) {
+      return next();
+    }
+    
+    // Check if user's role is included in the allowed roles
+    // Convert roles to array if it's not already
+    const allowedRoles = Array.isArray(roles[0]) ? roles[0] : roles;
+    
+    if (!allowedRoles.includes(req.user.role)) {
+      console.log(`Access denied. User role: ${req.user.role}, Allowed roles:`, allowedRoles);
       return res.status(403).json({
+        success: false,
         message: `User role ${req.user.role} is not authorized to access this route`,
       });
     }
+    
     next();
   };
 };

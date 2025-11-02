@@ -18,18 +18,21 @@ import StudentHome from './Page/Student/Home'
 import HumanResourcerHome from './Page/HumanResource/Home'
 import CollageDeanHome from './Page/CollegeDien/Home'
 import ViceAcademyHome from './Page/ViceAcademy/Home'
+import InstructorEvaluations from './Components/Student/InstructorEvaluations'
 
 const App = () => {
   const dispatch=useDispatch()
   const {user,isAuthenticated,loading}=useSelector(state=>state.auth)
-  if(!user){
-    <div>Loading......</div>
-  }
+
+ 
+
+  console.log(user)
+
   
   useEffect(()=>{
     dispatch(profile())
     
-  },[dispatch])
+  },[])
 
   // Helper function to get role-based home page
   const getRoleBasedHomePage = (userRole) => {
@@ -95,6 +98,7 @@ const App = () => {
          </PageProtector>
        }
      />
+     <Route path="/instructors/:instructorId/evaluations" element={<InstructorEvaluations  />} />
      <Route 
        path='/student-home' 
        element={ 

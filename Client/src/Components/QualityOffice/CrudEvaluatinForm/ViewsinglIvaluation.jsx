@@ -24,6 +24,7 @@ const ViewsinglIvaluation = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { evaluation, status, error } = useSelector((state) => state.evaluations);
+  console.log(evaluation)
   const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {

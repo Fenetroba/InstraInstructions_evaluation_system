@@ -130,11 +130,11 @@ export const getEvaluationForms = asyncHandler(async (req, res) => {
         query.instructor = req.user.id;
         break;
       // Admin and quality_officer can see all evaluations (no query modifications needed)
-      case 'Student':
       case 'quality_officer':
       default:
         break;
     }
+    
 
     // Execute query with pagination
     const evaluations = await EvaluationForm.paginate(query, options);
@@ -169,6 +169,9 @@ export const getEvaluationForms = asyncHandler(async (req, res) => {
 // @desc    Get single evaluation form
 // @route   GET /api/evaluation-forms/:id
 // @access  Private
+
+
+
 export const getEvaluationFormById = asyncHandler(async (req, res) => {
   try {
     const form = await EvaluationForm.findById(req.params.id)
@@ -303,6 +306,59 @@ export const deleteEvaluationForm = asyncHandler(async (req, res) => {
 // @desc    Submit evaluation response
 // @route   POST /api/evaluation-forms/:id/responses
 // @access  Private
+// @desc    Get evaluations by instructor ID
+// @route   GET /api/evaluation/instructor/:instructorId
+// @access  Private
+export const getEvaluationsByInstructor = asyncHandler(async (req, res) => {
+  try {
+    const { instructorId } = req.params;
+    const { page = 1, limit = 10 } = req.query;
+
+    const options = {
+      page: parseInt(page, 10),
+      limit: parseInt(limit, 10),
+      sort: { createdAt: -1 },
+      populate: [
+        { path: 'instructor', select: 'fullName email' },
+        { path: 'courseCode', select: 'name code' },
+        { path: 'department', select: 'name' }
+      ]
+    };
+
+    // Build query based on user role
+    const query = { 
+      instructor: instructorId,
+      status: 'active',
+      startDate: { $lte: new Date() },
+      endDate: { $gte: new Date() }
+    };
+
+    // If user is a student, exclude evaluations they've already responded to
+    if (req.user.role === 'Student') {
+      query['responses.student'] = { $ne: req.user.id };
+    }
+
+    const evaluations = await EvaluationForm.paginate(query, options);
+
+    res.status(200).json({
+      success: true,
+      data: evaluations.docs,
+      totalDocs: evaluations.totalDocs,
+      page: evaluations.page,
+      totalPages: evaluations.totalPages,
+      hasNextPage: evaluations.hasNextPage,
+      hasPrevPage: evaluations.hasPrevPage
+    });
+  } catch (error) {
+    console.error('Error fetching evaluations by instructor:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch evaluations',
+      error: error.message
+    });
+  }
+});
+
 export const submitResponse = asyncHandler(async (req, res) => {
   try {
     const form = await EvaluationForm.findById(req.params.id);

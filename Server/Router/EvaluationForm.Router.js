@@ -4,6 +4,7 @@ import {
   createEvaluationForm,
   getEvaluationForms,
   getEvaluationFormById,
+  getEvaluationsByInstructor,
   updateEvaluationForm,
   deleteEvaluationForm,
   submitResponse
@@ -24,7 +25,6 @@ const validateEvaluationForm = [
   validateRequest
 ];
 
-
 const validateResponse = [
   body('answers').isArray({ min: 1 }).withMessage('At least one answer is required'),
   validateRequest
@@ -33,9 +33,10 @@ const validateResponse = [
 // Protected routes
 router.use(protect);
 
-// Get all evaluation forms
+// Routes accessible by all authenticated users
 router.get('/', validateRequest, getEvaluationForms);
-// Get single evaluation form
+
+// Get single evaluation form - accessible by all authenticated users
 router.get(
   '/:id',
   [
@@ -45,8 +46,20 @@ router.get(
   getEvaluationFormById
 );
 
-// Admin-only routes
-router.use(authorize('admin', 'quality_officer'));
+// Get evaluations by instructor ID - accessible by all authenticated users
+router.get(
+  '/instructor/:instructorId',
+  [
+    param('instructorId').isMongoId().withMessage('Invalid instructor ID'),
+    query('page').optional().isInt({ min: 1 }),
+    query('limit').optional().isInt({ min: 1, max: 100 }),
+    validateRequest
+  ],
+  getEvaluationsByInstructor
+);
+
+// Routes that require specific roles
+router.use(authorize(['instractor', 'quality_officer', 'Student']));
 
 // Create new evaluation form
 router.post('/', validateEvaluationForm, createEvaluationForm);
@@ -80,5 +93,6 @@ router.post(
   ],
   submitResponse
 );
+
 
 export default router;
