@@ -25,7 +25,7 @@ router.use(protect); // This will protect all routes below
 
 router.get("/profile", getMe);
 router.put("/updatedetails", updateDetails);
-router.put("/updatepassword", updatePassword);
+router.put('/update-password/:userId', updatePassword);
 router.post("/logout", logout);
 
 

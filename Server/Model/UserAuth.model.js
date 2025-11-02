@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 
 const userSchema = new mongoose.Schema({
   fullName: {
@@ -40,6 +41,10 @@ const userSchema = new mongoose.Schema({
   },
   resetPasswordToken: String,
   resetPasswordExpire: Date,
+  isDefaultPassword: {
+    type: Boolean,
+    default: true,
+  },
 }, { 
   timestamps: true,
 });

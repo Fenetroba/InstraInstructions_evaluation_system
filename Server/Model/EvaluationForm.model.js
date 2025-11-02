@@ -35,7 +35,7 @@ const evaluationSchema = new mongoose.Schema({
     instructor: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: [true, 'Instructor is required']
+
   },
 
   // Evaluation Criteria

@@ -5,7 +5,7 @@ import { deleteUser, editUser, fetchAllUser, fetchUserSingle } from "../Controll
 const router = express.Router();
 
 // Apply both protect and authorize middlewares
-router.get('/', protect, authorize(['department_head', 'quality_officer', 'Student','instractor']), fetchAllUser);
+router.get('/', protect, authorize(['department_head', 'quality_officer', 'Student','instructor']), fetchAllUser);
 router.delete('/delete-user/:id', protect, authorize('department_head'), deleteUser);
 router.put('/edit-user/:id', protect, authorize('department_head'), editUser);
 router.get('/search-user', protect, authorize('department_head','Student'), fetchUserSingle);

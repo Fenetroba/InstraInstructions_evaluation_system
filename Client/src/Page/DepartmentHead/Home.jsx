@@ -10,7 +10,7 @@ const DepartmentHeadHome = ({user}) => {
       <Header/>
      <div className='flex items-center mb-10'>
      <Sider/>
-     <div className='mt-20'>DEPARTMENT HEAD DASHBOARD <span className='bg-(--three) p-3 rounded-lg'>{user?.data.fullName}</span></div>
+     <div className='mt-20'>DEPARTMENT HEAD DASHBOARD <span className='bg-(--three) p-3 rounded-lg'>{user?.fullName || 'Department Head'}</span></div>
      </div>
      <Analysis/>
     </div>

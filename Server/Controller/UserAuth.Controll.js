@@ -60,6 +60,7 @@ export const login = async (req, res) => {
 
     // Check if user exists
     const user = await UserAuth.findOne({ username }).select("+password");
+    console.log(user)
     if (!user) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
@@ -70,9 +71,16 @@ export const login = async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
+    // Check if password is default
+    const isDefaultPassword = await user.matchPassword("Osu@1234");
+
     // Generate JWT token
     const token = jwt.sign(
-      { id: user._id, role: user.role },
+      { 
+        id: user._id, 
+        role: user.role,
+        isDefaultPassword // Include in JWT payload if needed for authorization
+      },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRE || "7d" }
     );
@@ -94,7 +102,10 @@ export const login = async (req, res) => {
     res.status(200).json({
       success: true,
       token,
-      user,
+      user: {
+        ...user._doc,
+        isDefaultPassword
+      },
     });
   } catch (error) {
     console.error("Login error:", error);
@@ -199,27 +210,52 @@ export const updateDetails = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+// @desc    Update user password
+// @route   PUT /api/auth/update-password/:userId
+// @access  Private
 export const updatePassword = async (req, res) => {
   try {
-    const user = await UserAuth.findById(req.user.id).select("+password");
-
-    // Check current password
-    if (!(await user.matchPassword(req.body.currentPassword))) {
-      return res.status(401).json({ message: "Password is incorrect" });
+    const { currentPassword, newPassword } = req.body;
+    const userId = req.params.userId;
+    
+    // 1. Find the user with password field
+    const user = await UserAuth.findById(userId).select('+password');
+    if (!user) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'User not found' 
+      });
     }
-
-    user.password = req.body.newPassword;
+    
+    // 2. Verify current password using model method
+    const isMatch = await user.matchPassword(currentPassword);
+    if (!isMatch) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Current password is incorrect' 
+      });
+    }
+    
+    // 3. Update password and clear default password flag
+    user.password = newPassword;
+    user.isDefaultPassword = false; // Clear the default password flag
     await user.save();
-
+    
+    // 4. Generate new JWT token
     const token = user.getSignedJwtToken();
-
-    res.status(200).json({
+    
+    res.status(200).json({ 
       success: true,
-      token,
+      message: 'Password updated successfully',
+      token
     });
   } catch (error) {
-    console.error("Update password error:", error);
-    res.status(500).json({ message: "Server error" });
+    console.error('Error updating password:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
   }
 };
 export const logout = async (req, res) => {

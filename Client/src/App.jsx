@@ -19,14 +19,12 @@ import HumanResourcerHome from './Page/HumanResource/Home'
 import CollageDeanHome from './Page/CollegeDien/Home'
 import ViceAcademyHome from './Page/ViceAcademy/Home'
 import InstructorEvaluations from './Components/Student/InstructorEvaluations'
-
+import ChangePassword from './Page/Alluser/ChangePassword'
 const App = () => {
   const dispatch=useDispatch()
   const {user,isAuthenticated,loading}=useSelector(state=>state.auth)
 
  
-
-  console.log(user)
 
   
   useEffect(()=>{
@@ -38,15 +36,11 @@ const App = () => {
   const getRoleBasedHomePage = (userRole) => {
     const roleHomeMap = {
       'quality_officer': '/quality-office-home',
-      'instructor': '/instractor-home',
+      'instructor': '/instructor-home',
       'department_head': '/department-head-home',
-      'department head': '/department-head-home',
       'college_dean': '/college-dean-home',
-      'college dean': '/college-dean-home',
       'vice_academy': '/vice-academy-home',
-      'vice academy': '/vice-academy-home',
       'human_resours': '/human-resource-home',
-      'human resours': '/human-resource-home',
       'student': '/student-home',
       'admin': '/quality-office-home' // Admin defaults to quality office home
     };
@@ -63,6 +57,15 @@ const App = () => {
       <Toaster/>
       <Routes>
      {/* Root path: redirect to appropriate home or login */}
+
+   <Route 
+  path="/change-password" 
+  element={
+    <PageProtector>
+      <ChangePassword />
+    </PageProtector>
+  } 
+/>
      <Route 
        path='/' 
        element={
@@ -83,7 +86,7 @@ const App = () => {
        }
      />
      <Route 
-       path='/instractor-home' 
+       path='/instructor-home' 
        element={ 
          <PageProtector allowedRoles={['instructor', 'admin']}>
            <InstractorHome user={user}/>

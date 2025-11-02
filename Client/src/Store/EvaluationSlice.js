@@ -99,14 +99,19 @@ export const deleteEvaluation = createAsyncThunk(
 
 export const submitEvaluationResponse = createAsyncThunk(
   'evaluations/submitResponse',
-  async ({ id, answers }, { rejectWithValue }) => {
+  async ({ evaluationId, answers }, { rejectWithValue }) => {
     try {
-      const response = await axios.post(`${API_URL}/${id}/responses`, { answers });
-      toast.success('Response submitted successfully');
+      const response = await axios.post(`/api/evaluations/${evaluationId}/responses`, { 
+        answers: Object.entries(answers).map(([questionId, answer]) => ({
+          question: questionId,
+          answer
+        }))
+      });
+      toast.success('Evaluation submitted successfully!');
       return response.data;
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to submit response');
-      return rejectWithValue(error.response?.data?.message || 'Failed to submit response');
+      toast.error(error.response?.data?.message || 'Failed to submit evaluation');
+      return rejectWithValue(error.response?.data?.message || 'Failed to submit evaluation');
     }
   }
 );
@@ -114,14 +119,17 @@ export const submitEvaluationResponse = createAsyncThunk(
 
 const initialState = {
   evaluations: {
-    docs: [],  // Make sure this is initialized as an array
+    docs: [],
     totalDocs: 0,
     page: 1,
-    totalPages: 1
+    totalPages: 1,
   },
-  evaluation: null, // Single evaluation details
+  evaluation: null,
   status: 'idle',
-  error: null
+  error: null,
+  message: null,
+  // Add a flag to track if evaluations have been loaded
+  loaded: false,
 };
 
 const evaluationSlice = createSlice({
@@ -145,19 +153,25 @@ const evaluationSlice = createSlice({
       })
       .addCase(fetchAllEvaluations.fulfilled, (state, action) => {
         state.status = 'succeeded';
-        // Ensure we're properly handling both array and paginated responses
-        if (Array.isArray(action.payload)) {
-          state.evaluations.docs = action.payload;
-          state.evaluations.totalDocs = action.payload.length;
-          state.evaluations.totalPages = 1;
-        } else if (action.payload && typeof action.payload === 'object') {
-          // Handle paginated response object
-          state.evaluations.docs = action.payload.docs || [];
-          state.evaluations.totalDocs = action.payload.totalDocs || 0;
-          state.evaluations.page = action.payload.page || 1;
-          state.evaluations.totalPages = action.payload.totalPages || 1;
+        state.loaded = true;
+        try {
+          // Handle both array and paginated responses
+          if (Array.isArray(action.payload)) {
+            state.evaluations.docs = action.payload;
+            state.evaluations.totalDocs = action.payload.length;
+            state.evaluations.totalPages = 1;
+          } else if (action.payload && typeof action.payload === 'object') {
+            // Handle paginated response object
+            state.evaluations.docs = Array.isArray(action.payload.docs) ? action.payload.docs : [];
+            state.evaluations.totalDocs = action.payload.totalDocs || state.evaluations.docs.length;
+            state.evaluations.page = action.payload.page || 1;
+            state.evaluations.totalPages = action.payload.totalPages || 1;
+          }
+          state.error = null;
+        } catch (error) {
+          console.error('Error processing evaluations:', error);
+          state.error = 'Failed to process evaluations data';
         }
-        state.error = null;
       })
       .addCase(fetchAllEvaluations.rejected, (state, action) => {
         state.status = 'failed';
@@ -171,6 +185,7 @@ const evaluationSlice = createSlice({
       .addCase(fetchEvaluationById.fulfilled, (state, action) => {
         state.status = 'succeeded';
         state.evaluation = action.payload;
+        console.log(action.payload)
         state.error = null;
       })
       .addCase(fetchEvaluationById.rejected, (state, action) => {

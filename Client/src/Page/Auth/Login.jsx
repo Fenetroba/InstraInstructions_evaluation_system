@@ -43,6 +43,29 @@ const Login = () => {
           username: "",
           password: "",
         });
+    
+
+        // Check if the password is the default one and redirect accordingly
+        if (result.payload.user.isDefaultPassword) {
+          navigate('/change-password', { replace: true });
+        } else {
+          // Get the user role and redirect to the appropriate dashboard
+          const userRole = result?.payload?.user?.role;
+    
+          const roleDashboardMap = {
+            'quality_officer': '/quality-office-home',
+            'instructor': '/instructor-home',
+            'department_head': '/department-head-home',
+            'college_dean': '/college-dean-home',
+            'vice_academy': '/vice-academy-home',
+            'human_resours': '/human-resource-home',
+            'student': '/student-home',
+          
+          };
+          const normalizedRole = String(userRole || '').toLowerCase().replace(/\s+/g, '_');
+          const dashboardPath = roleDashboardMap[normalizedRole] || '/profile';
+          navigate(dashboardPath, { replace: true });
+        }
 
 
     

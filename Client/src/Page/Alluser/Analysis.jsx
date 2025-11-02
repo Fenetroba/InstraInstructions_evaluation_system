@@ -11,7 +11,7 @@ const Analysis = () => {
   }, [dispatch]);
   const instructors = users.filter(user => user.role === "instructor");
   const students = users.filter(user => user.role === "Student");
-  console.log(instructors.length)
+
   return (
     <div className="p-6">
       {/* Stats Cards */}

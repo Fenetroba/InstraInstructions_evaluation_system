@@ -7,7 +7,7 @@ export const fetchAllUsers = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await axios.get(`/user`);
-      return response.data.data;
+      return response.data.data || response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch users');
     }
@@ -42,6 +42,7 @@ export const updateUser = createAsyncThunk(
   }
 );
 
+
 export const deleteUser = createAsyncThunk(
   'users/delete',
   async (userId, { rejectWithValue }) => {
@@ -50,6 +51,38 @@ export const deleteUser = createAsyncThunk(
       return userId; // Return the deleted user's ID
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to delete user');
+    }
+  }
+);
+// Add this in UsersDataSlice.js
+export const updateUserPassword = createAsyncThunk(
+  'users/updatePassword',
+  async ({ userId, currentPassword, newPassword }, { rejectWithValue, dispatch }) => {
+    try {
+      const response = await axios.put(`/auth/update-password/${userId}`, {
+        currentPassword,
+        newPassword
+      });
+
+      // If we get a new token, we might want to update it in the auth state
+      if (response.data.token) {
+        // Store the new token in local storage
+        localStorage.setItem('token', response.data.token);
+        // You might want to update your auth state here if needed
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error('Password update error:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message
+      });
+      return rejectWithValue(
+        error.response?.data?.message || 
+        error.response?.data?.error || 
+        'Failed to update password. Please try again.'
+      );
     }
   }
 );
@@ -113,6 +146,20 @@ const usersDataSlice = createSlice({
         state.currentUser = null;
       }
     });
+    // Add this in the extraReducers builder in UsersDataSlice.js
+builder.addCase(updateUserPassword.pending, (state) => {
+  state.isLoading = true;
+  state.error = null;
+});
+builder.addCase(updateUserPassword.fulfilled, (state) => {
+  state.isLoading = false;
+  state.error = null;
+  // Optionally show success message
+});
+builder.addCase(updateUserPassword.rejected, (state, action) => {
+  state.isLoading = false;
+  state.error = action.payload;
+});
   },
 });
 
