@@ -24,7 +24,6 @@ const ViewsinglIvaluation = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { evaluation, status, error } = useSelector((state) => state.evaluations);
-  console.log(evaluation)
   const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
@@ -205,25 +204,7 @@ const ViewsinglIvaluation = () => {
                   <p className="text-lg font-semibold text-gray-900">{evaluation.semester}</p>
                 </div>
 
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="flex items-center gap-2 text-gray-600 mb-2">
-                    <BookOpen className="h-4 w-4" />
-                    <span className="text-sm font-semibold">Course Code</span>
-                  </div>
-                  <p className="text-lg font-semibold text-gray-900">
-                    {evaluation.courseCode || 'N/A'}
-                  </p>
-                </div>
 
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="flex items-center gap-2 text-gray-600 mb-2">
-                    <Users className="h-4 w-4" />
-                    <span className="text-sm font-semibold">Instructor</span>
-                  </div>
-                  <p className="text-lg font-semibold text-gray-900">
-                    {evaluation.instructor?.fullName || 'N/A'}
-                  </p>
-                </div>
 
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <div className="flex items-center gap-2 text-gray-600 mb-2">

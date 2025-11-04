@@ -51,6 +51,26 @@ export const fetchEvaluationById = createAsyncThunk(
     }
   }
 );
+export const evaluationsbyinstructor = createAsyncThunk(
+  'evaluations/fetchByInstructor',
+  async (instructorId, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(`/evaluation/instructor/${instructorId}`);
+      // The API returns { success: true, data: [...evaluations] }
+      const data = response.data.data;
+      
+      if (!Array.isArray(data)) {
+        console.error('Expected array but got:', data);
+        return [];
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Error fetching evaluations:', error);
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch evaluations');
+    }
+  }
+);
 
 export const createEvaluation = createAsyncThunk(
   'evaluations/create',
@@ -146,6 +166,27 @@ const evaluationSlice = createSlice({
     }
   },
   extraReducers: (builder) => {
+    // Fetch Evaluations by Instructor
+    builder
+      .addCase(evaluationsbyinstructor.pending, (state) => {
+        state.status = 'loading';
+        state.error = null;
+      })
+      .addCase(evaluationsbyinstructor.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        state.evaluations = {
+          docs: Array.isArray(action.payload) ? action.payload : [],
+          totalDocs: Array.isArray(action.payload) ? action.payload.length : 0,
+          page: 1,
+          totalPages: 1
+        };
+        state.error = null;
+      })
+      .addCase(evaluationsbyinstructor.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload;
+        state.evaluations = { docs: [], totalDocs: 0, page: 1, totalPages: 0 };
+      })
     // Fetch All Evaluations
     builder
   .addCase(fetchAllEvaluations.pending, (state) => {

@@ -12,7 +12,6 @@ const FetchEvaluation = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const { evaluations, status, error } = useSelector((state) => state.evaluations);
-  console.log(evaluations)
   const [isDeleting, setIsDeleting] = useState({});
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
@@ -55,7 +54,6 @@ const FetchEvaluation = () => {
       // Refresh the evaluations list
       dispatch(fetchAllEvaluations({ page: currentPage, limit: itemsPerPage }));
     } catch (error) {
-      console.error('Error deleting evaluation:', error);
       toast.error(error?.message || 'Failed to delete evaluation');
     } finally {
       setIsDeleting(prev => ({ ...prev, [id]: false }));
@@ -111,7 +109,7 @@ const FetchEvaluation = () => {
   }
 
   return (
-    <div className="container mx-auto p-4">
+    <div className="container mx-auto p-4 mb-40">
       <div className="bg-white rounded-lg shadow-sm p-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">Evaluation Forms</h1>
@@ -171,17 +169,18 @@ const FetchEvaluation = () => {
                 <Loader2 className="h-6 w-6 animate-spin text-gray-600" />
               </div>
             )}
-            <table className="w-full">
+            <table className="w-full ">
               <thead className="bg-(--six)">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">
                     Title
                   </th>
+                  
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">
-                    Course Code
+                    Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">
-                    Department
+                    Semester
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">
                     Date
@@ -201,14 +200,16 @@ const FetchEvaluation = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-500">
-                        {evaluation.courseCode || 'N/A'}
+                        {evaluation.isActive ? 'Active' : 'Inactive'}
                       </div>
+                  
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                        {getCategoryLabel(evaluation?.instructor?.department)}
-                      </span>
-                    </td>
+                      <div className="text-sm text-gray-500">
+                        {evaluation.semester}
+                      </div>
+                    </td> 
+                 
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {formatDate(evaluation.createdAt)}
                     </td>

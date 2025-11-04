@@ -48,7 +48,7 @@ const CreateEvaluation = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { status, error } = useSelector((state) => state.evaluations);
-  const { users } = useSelector((state) => state.usersData);
+  const {user} = useSelector((state) => state.auth);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
@@ -56,8 +56,6 @@ const CreateEvaluation = () => {
     academicYear: new Date().getFullYear().toString(),
     semester: "Spring",
     category: "",
-    courseCode: "",
-    department: "",
     startDate: "",
     endDate: "",
     criteria: [
@@ -72,11 +70,6 @@ const CreateEvaluation = () => {
     dispatch(fetchAllUsers());
   }, [dispatch]);
   const [errors, setErrors] = useState({});
-
-  // Get instructors, courses, and departments from your Redux store
-  const instructors = users?.filter((user) => user.role === "instructor") || [];
-  const department = users?.filter((user) => user.department);
-
 
   useEffect(() => {
     if (status === "succeeded" && status==="success" ) {
@@ -139,70 +132,49 @@ const CreateEvaluation = () => {
     }
   };
 
-  const validateForm = () => {
-    const newErrors = {};
-    if (!formData.title) newErrors.title = "Title is required";
-    if (!formData.category) newErrors.category = "Category is required";
-    if (!formData.courseCode) newErrors.courseCode = "Course is required";
-    if (!formData.department) newErrors.department = "Department is required";
-    if (!formData.startDate) newErrors.startDate = "Start date is required";
-    if (!formData.endDate) newErrors.endDate = "End date is required";
-    if (new Date(formData.endDate) <= new Date(formData.startDate)) {
-      newErrors.endDate = "End date must be after start date";
-    }
 
-    formData.criteria.forEach((criteria, index) => {
-      if (!criteria.category) {
-        newErrors[`criteria-${index}-category`] = "Category is required";
-      }
-      if (!criteria.description) {
-        newErrors[`criteria-${index}-description`] = "Description is required";
-      }
-      if (criteria.weight <= 0 || criteria.weight > 100) {
-        newErrors[`criteria-${index}-weight`] =
-          "Weight must be between 1 and 100";
-      }
-    });
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validateForm()) return;
-
     setIsSubmitting(true);
+    
     try {
-      // Prepare the data to match the backend model
+      // Verify user is authenticated
+      if (!user?._id) {
+        throw new Error('User not authenticated. Please log in again.');
+      }
+
+      // Prepare the evaluation data
       const evaluationData = {
-        title: formData.title,
-        description: formData.description,
+        title: formData.title.trim(),
+        description: (formData.description || 'No description provided').trim(),
         academicYear: formData.academicYear,
         semester: formData.semester,
         category: formData.category,
-        courseCode: formData.courseCode,
-        department: formData.department, // This should be the department ID
         startDate: formData.startDate,
         endDate: formData.endDate,
-        criteria: formData.criteria,
-        status: 'draft' // Default status
+        status: 'draft',
+        createdBy: user._id,  // This should be a valid ObjectId string
+        criteria: formData.criteria.map(criteria => ({
+          category: criteria.category,
+          description: criteria.description,
+          weight: Number(criteria.weight) || 0
+        })),
+        instructor: user._id  // Also set the instructor field
       };
 
-      console.log('Submitting evaluation data:', evaluationData);
-      
       const resultAction = await dispatch(createEvaluation(evaluationData));
       const result = resultAction.payload;
       
       if (result?.success) {
-        console.log('Evaluation created successfully:', result.data);
-        // Optionally reset form or redirect
-        // resetForm();
+        toast.success('Evaluation created successfully!');
+        navigate('/quality-office-home');
       } else {
-        console.error('Failed to create evaluation:', result?.message || 'Unknown error');
+        const errorMessage = result?.message || 'Failed to create evaluation';
+        toast.error(errorMessage);
       }
     } catch (error) {
-      console.error("Error in handleSubmit:", error);
+  
       toast.error(error.message || 'Failed to create evaluation');
     } finally {
       setIsSubmitting(false);
@@ -211,7 +183,7 @@ const CreateEvaluation = () => {
 
   return (
     <div className="container mx-auto p-6">
-      <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-6">
+      <div className="max-w-6xl mx-auto bg-white rounded-lg shadow-md p-6">
         <h1 className="text-2xl font-bold mb-6">Create New Evaluation</h1>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -227,9 +199,7 @@ const CreateEvaluation = () => {
                 placeholder="Enter evaluation title"
                 className={errors.title ? "border-red-500" : ""}
               />
-              {errors.title && (
-                <p className="text-sm text-red-500">{errors.title}</p>
-              )}
+          
             </div>
 
             {/* Category */}
@@ -255,57 +225,10 @@ const CreateEvaluation = () => {
                   ))}
                 </SelectContent>
               </Select>
-              {errors.category && (
-                <p className="text-sm text-red-500">{errors.category}</p>
-              )}
+             
             </div>
 
-            {/* Course - Only show if category is not 'students' */}
-            {formData.category === "students" && (
-              <div className="space-y-2">
-                <Label htmlFor="course">Course Code</Label>
-                <Input
-                  id="courseCode"
-                  name="courseCode"
-                  type="text"
-                  value={formData.courseCode || ""}
-                  onChange={handleChange}
-                  className={errors.courseCode ? "border-red-500" : ""}
-                  placeholder="Enter course Code"
-                />
-                {errors.courseCode && (
-                  <p className="text-sm text-red-500">{errors.courseCode}</p>
-                )}
-              </div>
-            )}
-
-            {/* Department */}
-            {/* Department Selector */}
-            <div className="space-y-2">
-              <Label htmlFor="department">Department</Label>
-              <Select
-                value={formData.department}
-                onValueChange={(value) =>
-                  handleSelectChange("department", value)
-                }
-              >
-                <SelectTrigger
-                  className={errors.department ? "border-red-500" : ""}
-                >
-                  <SelectValue placeholder="Select a department" />
-                </SelectTrigger>
-                <SelectContent>
-                  {instructors.map((dept, i) => (
-                    <SelectItem key={i} value={dept._id}>
-                      {dept.department}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.department && (
-                <p className="text-sm text-red-500">{errors.department}</p>
-              )}
-            </div>
+          
 
             {/* Academic Year */}
             <div className="space-y-2">
@@ -350,9 +273,6 @@ const CreateEvaluation = () => {
                 onChange={handleChange}
                 className={errors.startDate ? "border-red-500" : ""}
               />
-              {errors.startDate && (
-                <p className="text-sm text-red-500">{errors.startDate}</p>
-              )}
             </div>
 
             {/* End Date */}
@@ -367,9 +287,7 @@ const CreateEvaluation = () => {
                 min={formData.startDate}
                 className={errors.endDate ? "border-red-500" : ""}
               />
-              {errors.endDate && (
-                <p className="text-sm text-red-500">{errors.endDate}</p>
-              )}
+
             </div>
           </div>
 
@@ -413,11 +331,7 @@ const CreateEvaluation = () => {
                             : ""
                         }
                       />
-                      {errors[`criteria-${index}-category`] && (
-                        <p className="text-sm text-red-500">
-                          {errors[`criteria-${index}-category`]}
-                        </p>
-                      )}
+                     
                     </div>
 
                     <div className="space-y-1 md:col-span-2">
@@ -438,11 +352,7 @@ const CreateEvaluation = () => {
                             : ""
                         }
                       />
-                      {errors[`criteria-${index}-description`] && (
-                        <p className="text-sm text-red-500">
-                          {errors[`criteria-${index}-description`]}
-                        </p>
-                      )}
+                    
                     </div>
 
                     <div className="space-y-1">
@@ -461,11 +371,7 @@ const CreateEvaluation = () => {
                             : ""
                         }
                       />
-                      {errors[`criteria-${index}-weight`] && (
-                        <p className="text-sm text-red-500">
-                          {errors[`criteria-${index}-weight`]}
-                        </p>
-                      )}
+                     
                     </div>
                   </div>
                 </div>

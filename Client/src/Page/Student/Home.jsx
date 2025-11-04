@@ -6,6 +6,7 @@ import InstructorEvaluations from '@/Components/Student/InstructorEvaluations';
 
 const StudentHome = ({ user }) => {
   const [selectedInstructor, setSelectedInstructor] = useState(null);
+  
 
   const handleSelectInstructor = (instructor) => {
     setSelectedInstructor(instructor);
@@ -32,6 +33,7 @@ const StudentHome = ({ user }) => {
                   : ' View Available Evaluations'}
               </p>
             </div>
+          
 
             {!selectedInstructor ? (
               <InstructorList 

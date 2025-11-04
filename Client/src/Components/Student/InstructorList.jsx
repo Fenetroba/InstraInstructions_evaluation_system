@@ -24,12 +24,12 @@ const InstructorList = ({ user }) => {
   const departmentInstructors = users.filter(
     (u) => 
       u.role === 'instructor' && 
-      u.department === user?.data?.department
+      u.department === user?.department
   ) || [];
 
   // Handle instructor selection
   const handleSelectInstructor = (instructor) => {
-    navigate(`/instructors/${instructor._id}/evaluations`);
+    navigate(`/evaluations/instructor/${instructor._id}`);
   };
 
   if (loading) {

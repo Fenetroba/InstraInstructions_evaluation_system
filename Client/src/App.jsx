@@ -101,7 +101,7 @@ const App = () => {
          </PageProtector>
        }
      />
-     <Route path="/instructors/:instructorId/evaluations" element={<InstructorEvaluations  />} />
+     <Route path="/evaluations/instructor/:evaluationId" element={<InstructorEvaluations  />} />
      <Route 
        path='/student-home' 
        element={ 

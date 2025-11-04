@@ -1,94 +1,91 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchEvaluationById, submitEvaluationResponse } from '@/Store/EvaluationSlice';
-import { Loader2, AlertCircle, FileText, ArrowLeft, CheckCircle } from 'lucide-react';
+import { fetchAllEvaluations } from '@/Store/EvaluationSlice';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Loader2, FileText, CheckCircle, AlertCircle, ChevronRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { toast } from 'sonner';
 
 const InstructorEvaluations = () => {
-  const { id } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
-  
-  const { evaluation, status, error } = useSelector((state) => state.evaluations);
-  const [answers, setAnswers] = useState({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { evaluations, status, error } = useSelector((state) => ({
+    evaluations: Array.isArray(state.evaluations.evaluations?.docs) 
+      ? state.evaluations.evaluations.docs 
+      : [],
+    status: state.evaluations.status,
+    error: state.evaluations.error
+  }));
 
-  // Fetch evaluation when component mounts or ID changes
+  const [selectedEvaluation, setSelectedEvaluation] = useState(null);
+  const [showCriteria, setShowCriteria] = useState(false);
+
+  // Fetch all evaluations on component mount
   useEffect(() => {
-    if (id) {
-      dispatch(fetchEvaluationById(id));
-    }
-  }, [id, dispatch]);
+    dispatch(fetchAllEvaluations());
+  }, [dispatch]);
 
-  // Handle answer selection
-  const handleAnswerChange = (questionId, value) => {
-    setAnswers(prev => ({
-      ...prev,
-      [questionId]: value
-    }));
+  // Filter out evaluations the student has already completed
+  const availableEvaluations = evaluations.filter(evaluation => {
+    if (!evaluation.responses || evaluation.responses.length === 0) return true;
+    return !evaluation.responses.some(
+      response => response.student?.toString() === user?._id
+    );
+  });
+
+  // Handle evaluation selection
+  const handleSelectEvaluation = (evaluation) => {
+    setSelectedEvaluation(evaluation);
+    setShowCriteria(true);
   };
 
-  // Handle form submission
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    
+  // Handle start evaluation
+  const handleStartEvaluation = (evaluationId) => {
+    navigate(`/evaluate/${evaluationId}`);
+  };
+
+  // Format date range
+  const formatDateRange = (startDate, endDate) => {
     try {
-      const response = await dispatch(submitEvaluationResponse({
-        evaluationId: id,
-        answers: Object.entries(answers).map(([questionId, answer]) => ({
-          question: questionId,
-          answer
-        }))
-      })).unwrap();
-      
-      toast.success('Evaluation submitted successfully!');
-      navigate('/student-home');
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      return `${format(start, 'MMM d, yyyy')} - ${format(end, 'MMM d, yyyy')}`;
     } catch (error) {
-      console.error('Submission error:', error);
-      toast.error(error || 'Failed to submit evaluation');
-    } finally {
-      setIsSubmitting(false);
+      console.error('Error formatting dates:', error);
+      return 'Invalid date range';
     }
   };
-
-  // Check if user has already submitted this evaluation
-  const hasSubmitted = evaluation?.responses?.some(r => 
-    r.student?._id === user?.data?._id
-  );
 
   // Loading state
   if (status === 'loading') {
     return (
       <div className="flex items-center justify-center h-64">
         <Loader2 className="h-8 w-8 animate-spin" />
-        <span className="ml-2">Loading evaluation...</span>
+        <span className="ml-2">Loading evaluations...</span>
       </div>
     );
   }
 
   // Error state
-  if (status === 'failed' || error) {
+  if (status === 'failed') {
     return (
-      <div className="max-w-2xl mx-auto p-6">
+      <div className="p-4">
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Error</AlertTitle>
           <AlertDescription>
-            {error || 'Failed to load evaluation. Please try again.'}
+            {error || 'Failed to load evaluations. Please try again.'}
           </AlertDescription>
           <Button 
             variant="outline" 
-            onClick={() => dispatch(fetchEvaluationById(id))}
+            onClick={() => dispatch(fetchAllEvaluations())}
             className="mt-2"
           >
-            <RefreshCw className="mr-2 h-4 w-4" />
+            <Loader2 className="mr-2 h-4 w-4" />
             Retry
           </Button>
         </Alert>
@@ -96,143 +93,117 @@ const InstructorEvaluations = () => {
     );
   }
 
-  // No evaluation found
-  if (!evaluation) {
+  // No evaluations available
+  if (availableEvaluations.length === 0) {
     return (
       <div className="max-w-2xl mx-auto p-6 text-center">
-        <FileText className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 mb-2">Evaluation Not Found</h3>
+        <CheckCircle className="h-12 w-12 mx-auto text-green-500 mb-4" />
+        <h3 className="text-lg font-medium mb-2">No Evaluations Available</h3>
         <p className="text-muted-foreground mb-6">
-          The requested evaluation could not be found.
+          {evaluations.length === 0 
+            ? 'There are no evaluations available at the moment.' 
+            : 'You have completed all available evaluations.'}
         </p>
-        <Button onClick={() => navigate(-1)}>
-          ← Back to List
+        <Button onClick={() => navigate(-1)} variant="outline">
+          Go Back
         </Button>
       </div>
     );
   }
 
-  const { title, description, questions, startDate, endDate } = evaluation;
-  const now = new Date();
-  const isActive = new Date(startDate) <= now && now <= new Date(endDate);
-  const isUpcoming = new Date(startDate) > now;
-  const isCompleted = new Date(endDate) < now;
+  // Show criteria view
+  if (showCriteria && selectedEvaluation) {
+    return (
+      <div className="container mx-auto p-4 md:p-8 max-w-4xl">
+        <Button 
+          variant="ghost" 
+          onClick={() => setShowCriteria(false)}
+          className="mb-6"
+        >
+          <ChevronRight className="h-4 w-4 mr-2 transform rotate-180" />
+          Back to Evaluations
+        </Button>
 
-  return (
-    <div className="container mx-auto p-4 md:p-8 max-w-4xl">
-      <Button 
-        variant="ghost" 
-        onClick={() => navigate(-1)}
-        className="mb-6"
-      >
-        <ArrowLeft className="h-4 w-4 mr-2" />
-        Back
-      </Button>
-
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between items-start">
-            <div>
-              <CardTitle className="text-2xl">{title}</CardTitle>
-              <CardDescription className="mt-2">
-                {description || 'No description provided.'}
-              </CardDescription>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-2xl">{selectedEvaluation.title}</CardTitle>
+            <CardDescription>{selectedEvaluation.description || 'No description available.'}</CardDescription>
+            <div className="text-sm text-muted-foreground mt-2">
+              {formatDateRange(selectedEvaluation.startDate, selectedEvaluation.endDate)}
             </div>
-            <div className="text-sm text-right">
-              <div>Start: {format(new Date(startDate), 'PPpp')}</div>
-              <div>End: {format(new Date(endDate), 'PPpp')}</div>
-              <div className={`inline-flex items-center mt-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                isUpcoming 
-                  ? 'bg-yellow-100 text-yellow-800' 
-                  : isCompleted 
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-blue-100 text-blue-800'
-              }`}>
-                {isUpcoming ? 'Upcoming' : isCompleted ? 'Completed' : 'In Progress'}
-              </div>
-            </div>
-          </div>
-        </CardHeader>
-
-        {hasSubmitted ? (
+          </CardHeader>
+          
           <CardContent>
-            <div className="text-center py-8">
-              <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Evaluation Submitted</h3>
-              <p className="text-muted-foreground mb-6">
-                Thank you for submitting your evaluation.
-              </p>
-              <Button onClick={() => navigate('/student-home')}>
-                Back to Dashboard
-              </Button>
+            <div className="space-y-6">
+              <h3 className="text-lg font-medium">Evaluation Criteria</h3>
+              
+              {selectedEvaluation.criteria?.length > 0 ? (
+                <div className="space-y-4">
+                  {selectedEvaluation.criteria.map((criterion, index) => (
+                    <div key={index} className="border rounded-lg p-4">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-medium">{criterion.category}</h4>
+                          <p className="text-sm text-muted-foreground mt-1">{criterion.description}</p>
+                        </div>
+                        <span className="text-sm font-medium">Weight: {criterion.weight}%</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground">No criteria available for this evaluation.</p>
+              )}
             </div>
           </CardContent>
-        ) : (
-          <form onSubmit={handleSubmit}>
-            <CardContent className="space-y-6">
-              {questions?.map((question, index) => (
-                <div key={question._id} className="space-y-2">
-                  <h3 className="font-medium">
-                    {index + 1}. {question.questionText}
-                    {question.required && <span className="text-red-500 ml-1">*</span>}
-                  </h3>
-                  {question.type === 'text' ? (
-                    <textarea
-                      className="w-full p-2 border rounded-md"
-                      rows={3}
-                      required={question.required}
-                      onChange={(e) => handleAnswerChange(question._id, e.target.value)}
-                    />
-                  ) : (
-                    <div className="space-y-2">
-                      {question.options.map((option, i) => (
-                        <div key={i} className="flex items-center">
-                          <input
-                            type="radio"
-                            id={`${question._id}-${i}`}
-                            name={question._id}
-                            value={option}
-                            required={question.required}
-                            onChange={() => handleAnswerChange(question._id, option)}
-                            className="h-4 w-4 text-blue-600"
-                          />
-                          <label htmlFor={`${question._id}-${i}`} className="ml-2">
-                            {option}
-                          </label>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
 
-              <div className="pt-4 border-t">
+          <CardFooter className="flex justify-end border-t pt-4">
+            <Button 
+              onClick={() => handleStartEvaluation(selectedEvaluation._id)}
+              className="w-full sm:w-auto"
+            >
+              Proceed to Evaluation
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+    );
+  }
+
+  // Main evaluations list view
+  return (
+    <div className="container mx-auto p-4 md:p-8 max-w-4xl">
+      <h1 className="text-2xl font-bold mb-6">Available Evaluations</h1>
+      
+      <div className="grid gap-4 md:grid-cols-2">
+        {availableEvaluations.map((evaluation) => (
+          <Card key={evaluation._id} className="hover:shadow-md transition-shadow">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center">
+                <FileText className="h-5 w-5 mr-2 text-primary" />
+                {evaluation.title}
+              </CardTitle>
+              <CardDescription>
+                {evaluation.description || 'No description available.'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="text-sm text-muted-foreground">
+                  <p>{formatDateRange(evaluation.startDate, evaluation.endDate)}</p>
+                  <p>{evaluation.criteria?.length || 0} criteria</p>
+                </div>
                 <Button 
-                  type="submit" 
-                  disabled={!isActive || isSubmitting || hasSubmitted}
-                  className="w-full md:w-auto"
+                  onClick={() => handleSelectEvaluation(evaluation)}
+                  className="w-full"
                 >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Submitting...
-                    </>
-                  ) : (
-                    'Submit Evaluation'
-                  )}
+                  View Details
                 </Button>
-                {!isActive && (
-                  <p className="mt-2 text-sm text-red-500">
-                    {isUpcoming 
-                      ? 'This evaluation is not yet available.' 
-                      : 'This evaluation has ended.'}
-                  </p>
-                )}
               </div>
             </CardContent>
-          </form>
-        )}
-      </Card>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 };
