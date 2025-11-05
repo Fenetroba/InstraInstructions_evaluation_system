@@ -143,6 +143,7 @@ const CreateEvaluation = () => {
       if (!user?._id) {
         throw new Error('User not authenticated. Please log in again.');
       }
+      console.log(user._id)
 
       // Prepare the evaluation data
       const evaluationData = {
@@ -160,7 +161,7 @@ const CreateEvaluation = () => {
           description: criteria.description,
           weight: Number(criteria.weight) || 0
         })),
-        instructor: user._id  // Also set the instructor field
+  
       };
 
       const resultAction = await dispatch(createEvaluation(evaluationData));

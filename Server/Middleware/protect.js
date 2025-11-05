@@ -4,45 +4,50 @@ import UserAuth from "../Model/UserAuth.model.js";
 
 // Protect routes
 export const protect = async (req, res, next) => {
+    try {
+        const token = req.cookies?.token;
+        let decoded;
 
-    const token = req.cookies?.token;
-
-    if (!token) {
-        // If not in cookies, try Authorization header (for backward compatibility)
-        const authHeader = req.headers['authorization'];
-        const authToken = authHeader && authHeader.split(' ')[1];
-        
-        if (!authToken) {
-            return res.status(401).json({ 
-                success: false,
-                message: 'Access token required' 
-            });
-        }
-        
-        // Verify the token from header
-        return jwt.verify(authToken, process.env.JWT_SECRET, (err, user) => {
-            if (err) {
-                return res.status(403).json({ 
+        if (!token) {
+            // If not in cookies, try Authorization header (for backward compatibility)
+            const authHeader = req.headers['authorization'];
+            const authToken = authHeader && authHeader.split(' ')[1];
+            
+            if (!authToken) {
+                return res.status(401).json({ 
                     success: false,
-                    message: 'Invalid or expired token' 
+                    message: 'Access token required' 
                 });
             }
-            req.user = user;
-            next();
-        });
-    }
+            
+            // Verify the token from header
+            decoded = jwt.verify(authToken, process.env.JWT_SECRET);
+        } else {
+            // Verify the token from cookie
+            decoded = jwt.verify(token, process.env.JWT_SECRET);
+        }
 
-    // Verify the token from cookie
-    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-        if (err) {
-            return res.status(403).json({ 
+        // Get user from the token
+        const user = await UserAuth.findById(decoded.id).select('-password');
+        
+        if (!user) {
+            return res.status(401).json({
                 success: false,
-                message: 'Invalid or expired token' 
+                message: 'User not found'
             });
         }
+
+        // Attach user to request object
         req.user = user;
         next();
-    });
+    } catch (error) {
+        console.error('Authentication error:', error);
+        return res.status(401).json({
+            success: false,
+            message: 'Not authorized, token failed',
+            error: error.message
+        });
+    }
 };
 
 // Grant access to specific roles

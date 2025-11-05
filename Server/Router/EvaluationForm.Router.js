@@ -38,12 +38,7 @@ const validateEvaluation = [
   validateRequest
 ];
 
-const validateResponse = [
-  body('answers').isArray().withMessage('Answers must be an array'),
-  body('answers.*.questionId').isMongoId().withMessage('Invalid question ID'),
-  body('answers.*.answer').notEmpty().withMessage('Answer is required'),
-  validateRequest
-];
+
 
 // Apply authentication to all routes
 router.use(protect);
@@ -88,7 +83,7 @@ router.get(
 );
 
 // Protected admin routes
-router.use(authorize(['Admin', 'quality_officer']));
+router.use(authorize(['Admin', 'quality_officer','Student']));
 
 // Create new evaluation
 router.post(
@@ -127,8 +122,8 @@ router.delete(
 router.post(
   '/:id/responses',
   [
-    param('id').isMongoId().withMessage('Invalid evaluation ID'),
-    ...validateResponse
+    param('id').isMongoId().withMessage('Invalid evaluation ID')
+
   ],
   submitResponse
 );

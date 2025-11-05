@@ -3,58 +3,7 @@ import mongoosePaginate from 'mongoose-paginate-v2';
 
 const { Schema } = mongoose;
 
-// Question Schema (embedded in EvaluationForm)
-const questionSchema = new Schema({
-  questionText: {
-    type: String,
-    required: [true, 'Question text is required'],
-    trim: true
-  },
-  questionType: {
-    type: String,
-    enum: ['multiple_choice', 'text', 'scale'],
-    required: [true, 'Question type is required']
-  },
-  options: [{
-    text: String,
-    value: Schema.Types.Mixed
-  }],
-  required: {
-    type: Boolean,
-    default: false
-  },
-  order: {
-    type: Number,
-    min: 0
-  }
-}, { _id: true });
 
-// Response Schema (embedded in EvaluationForm)
-const responseSchema = new Schema({
-  student: {
-    type: Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
-  answers: [{
-    questionId: {
-      type: Schema.Types.ObjectId,
-      required: true
-    },
-    answer: Schema.Types.Mixed,
-    score: {
-      type: Number,
-      min: 0,
-      max: 5
-    }
-  }],
-  submittedAt: {
-    type: Date,
-    default: Date.now
-  },
-  ipAddress: String,
-  userAgent: String
-}, { _id: true });
 
 // Main Evaluation Form Schema
 const evaluationFormSchema = new Schema({
@@ -62,7 +11,7 @@ const evaluationFormSchema = new Schema({
   instructor: {
     type: Schema.Types.ObjectId,
     ref: 'User',
-    required: [true, 'Instructor is required']
+    // required: [true, 'Instructor is required']
   },
   title: {
     type: String,
@@ -94,11 +43,11 @@ const evaluationFormSchema = new Schema({
     // required: [true, 'Department is required']
   },
 
-  // Questions
-  questions: [questionSchema],
+
 
   // Criteria
   criteria: [{
+    
     category: {
       type: String,
       required: [true, 'Category is required for each criteria'],
@@ -115,6 +64,7 @@ const evaluationFormSchema = new Schema({
       min: 0,
       max: 100
     }
+
   }],
 
   // Timing
@@ -140,9 +90,14 @@ const evaluationFormSchema = new Schema({
     default: 'draft'
   },
 
-  // Responses
-  responses: [responseSchema],
 
+
+  // Responses
+  responses: [{
+    type: Schema.Types.ObjectId,
+    ref: 'EvaluationResponse'
+  }],
+  
   // Analytics
   averageScore: {
     type: Number,
@@ -186,7 +141,10 @@ evaluationFormSchema.virtual('isActive').get(function() {
 
 // Pre-save hook to update response count
 evaluationFormSchema.pre('save', function(next) {
-  this.responseCount = this.responses.length;
+  // Only update responseCount if responses array exists
+  if (this.responses) {
+    this.responseCount = this.responses.length;
+  }
   next();
 });
 

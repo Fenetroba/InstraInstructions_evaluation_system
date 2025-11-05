@@ -121,7 +121,7 @@ export const submitEvaluationResponse = createAsyncThunk(
   'evaluations/submitResponse',
   async ({ evaluationId, answers }, { rejectWithValue }) => {
     try {
-      const response = await axios.post(`/api/evaluations/${evaluationId}/responses`, { 
+      const response = await axios.post(`/evaluation/${evaluationId}/responses`, { 
         answers: Object.entries(answers).map(([questionId, answer]) => ({
           question: questionId,
           answer

@@ -1,28 +1,45 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchAllEvaluations } from '@/Store/EvaluationSlice';
+import { createSelector } from '@reduxjs/toolkit';
+import { fetchAllEvaluations, submitEvaluationResponse } from '@/Store/EvaluationSlice';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Loader2, FileText, CheckCircle, AlertCircle, ChevronRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { toast } from 'sonner';
+
 
 const InstructorEvaluations = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
-  const { evaluations, status, error } = useSelector((state) => ({
-    evaluations: Array.isArray(state.evaluations.evaluations?.docs) 
-      ? state.evaluations.evaluations.docs 
-      : [],
-    status: state.evaluations.status,
-    error: state.evaluations.error
-  }));
+  
+  // Create memoized selector
+  const selectEvaluationsData = useMemo(
+    () => createSelector(
+      [(state) => state.evaluations],
+      (evaluationsState) => ({
+        evaluations: Array.isArray(evaluationsState.evaluations?.docs) 
+          ? evaluationsState.evaluations.docs 
+          : [],
+        status: evaluationsState.status,
+        error: evaluationsState.error
+      })
+    ),
+    [] // No dependencies since we're only accessing state
+  );
+
+  const { evaluations, status, error } = useSelector(selectEvaluationsData);
+  console.log(evaluations)
 
   const [selectedEvaluation, setSelectedEvaluation] = useState(null);
   const [showCriteria, setShowCriteria] = useState(false);
+  const [scores, setScores] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formErrors, setFormErrors] = useState({});
+
 
   // Fetch all evaluations on component mount
   useEffect(() => {
@@ -41,6 +58,96 @@ const InstructorEvaluations = () => {
   const handleSelectEvaluation = (evaluation) => {
     setSelectedEvaluation(evaluation);
     setShowCriteria(true);
+  };
+
+  // Handle score change
+  const handleScoreChange = (criterion, value) => {
+    const criterionId = criterion._id || criterion.id;
+    const numValue = parseFloat(value) || 0;
+    setScores(prev => ({
+      ...prev,
+      [criterionId]: numValue
+    }));
+    console.log(criterionId)
+    // Clear error for this field if it exists
+    if (formErrors[criterionId]) {
+      setFormErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[criterionId];
+        return newErrors;
+      });
+    }
+  };
+
+  // Validate form
+  const validateForm = () => {
+    const errors = {};
+    let isValid = true;
+    
+    if (selectedEvaluation?.criteria) {
+      selectedEvaluation.criteria.forEach(criterion => {
+        const criterionId = criterion._id || criterion.id;
+        const score = scores[criterionId] || 0;
+        if (isNaN(score) || score < 0 || score > criterion.weight) {
+          errors[criterionId] = `Score must be between 0 and ${criterion.weight}`;
+          isValid = false;
+        }
+      });
+    }
+    
+    setFormErrors(errors);
+    return isValid;
+  };
+
+  // Handle form submission
+  const handleSubmitEvaluation = async () => {
+    if (!validateForm()) {
+      toast.error('Please correct the errors before submitting.');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      
+      // Prepare answers in the format expected by the API
+      const answers = {};
+      selectedEvaluation.criteria.forEach(criterion => {
+        const criterionId = criterion._id || criterion.id;
+        answers[criterionId] = scores[criterionId] || 0;
+      });
+
+      // Log the payload for debugging
+      console.log('Submitting evaluation with data:', {
+        evaluationId: selectedEvaluation._id,
+        answers
+      });
+
+      const response = await dispatch(submitEvaluationResponse({
+        evaluationId: selectedEvaluation._id,
+        answers
+      })).unwrap();
+      
+      toast.success('Evaluation submitted successfully!');
+      
+      // Refresh evaluations and reset form
+      await dispatch(fetchAllEvaluations());
+      setScores({});
+      setFormErrors({});
+      setShowCriteria(false);
+      
+    } catch (error) {
+      console.error('Error submitting evaluation:', error);
+      
+      // More detailed error handling
+      let errorMessage = error.message || 'Failed to submit evaluation';
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+      
+      toast.error(errorMessage);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Handle start evaluation
@@ -114,7 +221,7 @@ const InstructorEvaluations = () => {
   // Show criteria view
   if (showCriteria && selectedEvaluation) {
     return (
-      <div className="container mx-auto p-4 md:p-8 max-w-4xl">
+      <div className="container mx-auto p-4 md:p-8 max-w-7xl">
         <Button 
           variant="ghost" 
           onClick={() => setShowCriteria(false)}
@@ -136,7 +243,6 @@ const InstructorEvaluations = () => {
           <CardContent>
             <div className="space-y-6">
               <h3 className="text-lg font-medium">Evaluation Criteria</h3>
-              
               {selectedEvaluation.criteria?.length > 0 ? (
                 <div className="space-y-4">
                   {selectedEvaluation.criteria.map((criterion, index) => (
@@ -146,7 +252,27 @@ const InstructorEvaluations = () => {
                           <h4 className="font-medium">{criterion.category}</h4>
                           <p className="text-sm text-muted-foreground mt-1">{criterion.description}</p>
                         </div>
-                        <span className="text-sm font-medium">Weight: {criterion.weight}%</span>
+                        <div className='flex flex-col space-y-2 w-48'>
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm font-medium">Score (0-{criterion.weight})</span>
+                            <span className="text-sm text-muted-foreground">Max: {criterion.weight}%</span>
+                          </div>
+                          <input 
+                            type="number" 
+                            value={scores[criterion._id || criterion.id] || ''}
+                            onChange={(e) => handleScoreChange(criterion, e.target.value)}
+                            className={`w-full p-2 border rounded-md ${
+                              formErrors[criterion._id || criterion.id] ? 'border-red-500' : 'border-gray-300'
+                            }`}
+                            min={0}
+                            max={criterion.weight}
+                            step="0.5"
+                            placeholder="0"
+                          />
+                          {formErrors[criterion._id || criterion.id] && (
+                            <p className="text-xs text-red-500">{formErrors[criterion._id || criterion.id]}</p>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -157,12 +283,26 @@ const InstructorEvaluations = () => {
             </div>
           </CardContent>
 
-          <CardFooter className="flex justify-end border-t pt-4">
+          <CardFooter className="flex flex-col sm:flex-row justify-end gap-3 border-t pt-4">
             <Button 
-              onClick={() => handleStartEvaluation(selectedEvaluation._id)}
+              variant="outline"
+              onClick={() => setShowCriteria(false)}
               className="w-full sm:w-auto"
+              disabled={isSubmitting}
             >
-              Proceed to Evaluation
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSubmitEvaluation}
+              className="w-full sm:w-auto"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Submitting...
+                </>
+              ) : 'Submit Evaluation'}
             </Button>
           </CardFooter>
         </Card>

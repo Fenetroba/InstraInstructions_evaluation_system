@@ -20,6 +20,7 @@ import CollageDeanHome from './Page/CollegeDien/Home'
 import ViceAcademyHome from './Page/ViceAcademy/Home'
 import InstructorEvaluations from './Components/Student/InstructorEvaluations'
 import ChangePassword from './Page/Alluser/ChangePassword'
+
 const App = () => {
   const dispatch=useDispatch()
   const {user,isAuthenticated,loading}=useSelector(state=>state.auth)
@@ -102,6 +103,8 @@ const App = () => {
        }
      />
      <Route path="/evaluations/instructor/:evaluationId" element={<InstructorEvaluations  />} />
+
+     
      <Route 
        path='/student-home' 
        element={ 

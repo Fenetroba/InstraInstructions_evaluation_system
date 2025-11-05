@@ -91,6 +91,15 @@ export const getEvaluationById = asyncHandler(async (req, res) => {
  */
 export const createEvaluation = asyncHandler(async (req, res) => {
   try {
+    // Check if user is authenticated and has an ID
+    if (!req.user || !req.user._id) {
+      console.error('No user found in request');
+      return res.status(401).json({
+        success: false,
+        message: 'User not authenticated'
+      });
+    }
+
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({
@@ -99,11 +108,20 @@ export const createEvaluation = asyncHandler(async (req, res) => {
       });
     }
 
-    const evaluation = new EvaluationForm({
+    // Create evaluation with user reference
+    const evaluationData = {
       ...req.body,
-      createdBy: req.user._id
+      createdBy: req.user._id,
+      updatedBy: req.user._id
+    };
+
+    console.log('Creating evaluation with data:', {
+      ...evaluationData,
+      createdBy: req.user._id,
+      userEmail: req.user.email // For debugging
     });
 
+    const evaluation = new EvaluationForm(evaluationData);
     await evaluation.save();
 
     res.status(201).json({
@@ -113,10 +131,21 @@ export const createEvaluation = asyncHandler(async (req, res) => {
     });
   } catch (error) {
     console.error('Error creating evaluation:', error);
+    
+    // Handle validation errors specifically
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(val => val.message);
+      return res.status(400).json({
+        success: false,
+        message: 'Validation error',
+        errors: messages
+      });
+    }
+
     res.status(500).json({
       success: false,
       message: 'Failed to create evaluation',
-      error: error.message
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
     });
   }
 });
@@ -223,18 +252,39 @@ export const submitResponse = asyncHandler(async (req, res) => {
 
     // Check if evaluation is active
     if (evaluation.status !== 'active') {
+      let message = 'This evaluation is not currently accepting responses';
+      if (evaluation.status === 'draft') {
+        message = 'This evaluation is still in draft mode and not yet open for responses';
+      } else if (evaluation.status === 'completed') {
+        message = 'This evaluation has been completed and is no longer accepting responses';
+      } else if (evaluation.status === 'archived') {
+        message = 'This evaluation has been archived and is no longer accepting responses';
+      }
+      
       return res.status(400).json({
         success: false,
-        message: 'This evaluation is not currently accepting responses'
+        message,
+        status: evaluation.status
       });
     }
 
     // Check evaluation period
     const now = new Date();
-    if (now < evaluation.startDate || now > evaluation.endDate) {
+    if (now < evaluation.startDate) {
       return res.status(400).json({
         success: false,
-        message: 'This evaluation is not currently accepting responses'
+        message: `This evaluation is not open yet. It will start on ${evaluation.startDate.toLocaleDateString()}`,
+        startDate: evaluation.startDate,
+        currentDate: now
+      });
+    }
+    
+    if (now > evaluation.endDate) {
+      return res.status(400).json({
+        success: false,
+        message: `This evaluation closed on ${evaluation.endDate.toLocaleDateString()}`,
+        endDate: evaluation.endDate,
+        currentDate: now
       });
     }
 
@@ -250,29 +300,74 @@ export const submitResponse = asyncHandler(async (req, res) => {
       });
     }
 
-    // Validate answers
+    // Validate criteria scores
     const { answers } = req.body;
     if (!Array.isArray(answers) || answers.length === 0) {
       return res.status(400).json({
         success: false,
-        message: 'No answers provided'
+        message: 'No criteria scores provided'
       });
+    }
+
+    // Map criteria scores to the required format
+    const criteriaScores = answers.map(score => ({
+      criterionId: score.criterionId,
+      score: parseFloat(score.score) || 0,
+      comment: score.comment || ''
+    }));
+
+    // Validate all criteria are included
+    if (criteriaScores.length !== evaluation.criteria.length) {
+      return res.status(400).json({
+        success: false,
+        message: 'Scores for all criteria are required'
+      });
+    }
+
+    // Validate scores are within range
+    for (const score of criteriaScores) {
+      const criterion = evaluation.criteria.id(score.criterionId);
+      if (!criterion) {
+        return res.status(400).json({
+          success: false,
+          message: `Invalid criterion ID: ${score.criterionId}`
+        });
+      }
+      
+      if (score.score < 0 || score.score > criterion.weight) {
+        return res.status(400).json({
+          success: false,
+          message: `Score for ${criterion.category} must be between 0 and ${criterion.weight}`
+        });
+      }
     }
 
     // Add response
     evaluation.responses.push({
       student: req.user._id,
-      answers,
+      answers: criteriaScores,
       ipAddress: req.ip,
-      userAgent: req.get('User-Agent')
+      userAgent: req.get('User-Agent'),
+      submittedAt: new Date()
     });
+
+    // Update evaluation stats
+    const totalScore = criteriaScores.reduce((sum, score) => sum + (parseFloat(score.score) || 0), 0);
+    const averageScore = totalScore / criteriaScores.length;
+    
+    evaluation.averageScore = averageScore;
+    evaluation.responseCount = (evaluation.responseCount || 0) + 1;
 
     await evaluation.save();
 
     res.status(201).json({
       success: true,
-      message: 'Response submitted successfully',
-      data: evaluation
+      message: 'Evaluation submitted successfully',
+      data: {
+        evaluationId: evaluation._id,
+        submittedAt: new Date(),
+        averageScore: averageScore.toFixed(2)
+      }
     });
   } catch (error) {
     console.error('Error submitting response:', error);
