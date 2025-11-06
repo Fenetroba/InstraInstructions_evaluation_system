@@ -11,16 +11,20 @@ const evaluationResponseSchema = new Schema({
   student: {
     type: Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: function() {
+      return !this.instructor; // Student is required if instructor is not present
+    }
   },
   instructor: {
     type: Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: function() {
+      return !this.student; // Instructor is required if student is not present
+    }
   },
   courseCode: {
     type: String,
-    required: true
+    // required: true
   },
   responses: [{
     criteriaId: {
@@ -50,9 +54,12 @@ const evaluationResponseSchema = new Schema({
   timestamps: true
 });
 
-// Ensure a student can only submit one evaluation per instructor per course
+// Ensure a user can only submit one response per evaluation
 evaluationResponseSchema.index(
-  { evaluation: 1, student: 1 },
+  { evaluation: 1, $or: [
+    { student: { $exists: true } },
+    { instructor: { $exists: true } }
+  ]},
   { unique: true }
 );
 

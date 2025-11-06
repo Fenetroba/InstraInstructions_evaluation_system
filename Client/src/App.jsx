@@ -102,7 +102,15 @@ const App = () => {
          </PageProtector>
        }
      />
-     <Route path="/evaluations/instructor/:evaluationId" element={<InstructorEvaluations  />} />
+    
+      <Route 
+       path="/evaluation/:id" 
+       element={
+         <PageProtector requireAuth={true}>
+          {(user?.role || user?.data?.role)==="quality_officer"?<ViewsinglIvaluation/>:<InstructorEvaluations  />}
+         </PageProtector>
+       } 
+     />
 
      
      <Route 
@@ -154,14 +162,7 @@ const App = () => {
          </PageProtector>
        } 
      />
-     <Route 
-       path="/evaluations/:id" 
-       element={
-         <PageProtector requireAuth={true}>
-           <ViewsinglIvaluation />
-         </PageProtector>
-       } 
-     />
+    
 
       </Routes>
      

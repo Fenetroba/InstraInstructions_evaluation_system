@@ -23,9 +23,17 @@ const ViewsinglIvaluation = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { evaluation, status, error } = useSelector((state) => state.evaluations);
+  const { evaluation: evaluationData, status, error } = useSelector((state) => state.evaluations);
   const [activeTab, setActiveTab] = useState('overview');
-
+  
+  // Handle both nested (response.data) and flat data structures
+  const evaluation = evaluationData?.data || evaluationData;
+  
+  // Debug log
+  useEffect(() => {
+    console.log('Current evaluation data:', evaluation);
+    console.log('Raw evaluation data from Redux:', evaluationData);
+  }, [evaluation, evaluationData]);
   useEffect(() => {
     if (id) {
       dispatch(fetchEvaluationById(id));
@@ -53,16 +61,40 @@ const ViewsinglIvaluation = () => {
   };
 
   const getStatusBadge = (status) => {
-    const statusConfig = {
-      draft: { color: 'bg-gray-100 text-gray-800', icon: FileText },
-      active: { color: 'bg-green-100 text-green-800', icon: CheckCircle2 },
-      completed: { color: 'bg-blue-100 text-blue-800', icon: Award },
-      archived: { color: 'bg-purple-100 text-purple-800', icon: Archive }
-    };
-
-    const config = statusConfig[status] || statusConfig.draft;
-    const Icon = config.icon;
-
+    const baseStyle = 'px-2 py-1 text-xs font-medium rounded-full';
+    const statusLower = status?.toLowerCase?.() || 'draft'; // Default to 'draft' if status is undefined
+    
+    switch (statusLower) {
+      case 'active':
+        return (
+          <span className={`${baseStyle} bg-green-100 text-green-800 flex items-center gap-1`}>
+            <CheckCircle2 className="h-3 w-3" />
+            Active
+          </span>
+        );
+      case 'completed':
+        return (
+          <span className={`${baseStyle} bg-blue-100 text-blue-800 flex items-center gap-1`}>
+            <Award className="h-3 w-3" />
+            Completed
+          </span>
+        );
+      case 'archived':
+        return (
+          <span className={`${baseStyle} bg-purple-100 text-purple-800 flex items-center gap-1`}>
+            <Archive className="h-3 w-3" />
+            Archived
+          </span>
+        );
+      case 'draft':
+      default:
+        return (
+          <span className={`${baseStyle} bg-gray-100 text-gray-800 flex items-center gap-1`}>
+            <FileText className="h-3 w-3" />
+            Draft
+          </span>
+        );
+    }
     return (
       <span className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 ${config.color}`}>
         <Icon className="h-3 w-3" />

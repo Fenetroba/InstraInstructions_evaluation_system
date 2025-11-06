@@ -8,10 +8,13 @@ const { Schema } = mongoose;
 // Main Evaluation Form Schema
 const evaluationFormSchema = new Schema({
   // Basic Information
-  instructor: {
-    type: Schema.Types.ObjectId,
-    ref: 'User',
-    // required: [true, 'Instructor is required']
+  category: {
+    type: String,
+    required: [true, 'Category is required (e.g., students, instructors)'],
+    enum: {
+      values: ['College_Team', 'Self_Evaluation', 'Immediate_Supervisior','Student'],
+      message: 'Category must be College_Team, Self_Evaluation, Immediate_Supervisior, or Student'
+    }
   },
   title: {
     type: String,
@@ -34,18 +37,7 @@ const evaluationFormSchema = new Schema({
     },
     required: [true, 'Semester is required']
   },
-  courseCode: {
-    type: String,
-    // required: [true, 'Course code is required']
-  },
-  department: {
-    type: String,
-    // required: [true, 'Department is required']
-  },
 
-
-
-  // Criteria
   criteria: [{
     
     category: {
@@ -62,7 +54,7 @@ const evaluationFormSchema = new Schema({
       type: Number,
       required: [true, 'Weight is required for each criteria'],
       min: 0,
-      max: 100
+      max: 10
     }
 
   }],
@@ -139,12 +131,20 @@ evaluationFormSchema.virtual('isActive').get(function() {
          this.endDate >= now;
 });
 
-// Pre-save hook to update response count
+// Pre-save hook to validate criteria weights
 evaluationFormSchema.pre('save', function(next) {
   // Only update responseCount if responses array exists
   if (this.responses) {
     this.responseCount = this.responses.length;
   }
+  
+  // Validate criteria weights
+  // if (this.criteria && this.criteria.length > 0) {
+  //   const totalWeight = this.criteria.reduce((sum, criteria) => sum + criteria.weight, 0);
+  //   if (totalWeight !== 100) {
+  //     throw new Error(`Total weight of all criteria must be 100%. Current total: ${totalWeight}%`);
+  //   }
+  // }
   next();
 });
 

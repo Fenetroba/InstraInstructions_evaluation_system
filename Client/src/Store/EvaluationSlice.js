@@ -2,37 +2,24 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from '../Lib/Axios';
 import { toast } from 'sonner';
 
-const API_URL = '/evaluation';
+// Initial state
+const initialState = {
+  evaluations: [],
+  currentEvaluation: null,
+  responses: [],
+  status: 'idle', // 'idle' | 'loading' | 'succeeded' | 'failed'
+  error: null,
+  submissionStatus: 'idle', // 'idle' | 'submitting' | 'succeeded' | 'failed'
+  evaluation: null,
+};
 
 // Async thunks
-export const fetchAllEvaluations = createAsyncThunk(
-  'evaluations/fetchAll',
-  async ({ page = 1, limit = 10, instructorId } = {}, { rejectWithValue }) => {
+export const fetchEvaluations = createAsyncThunk(
+  'evaluations/fetchEvaluations',
+  async (_, { rejectWithValue }) => {
     try {
-      let url = `${API_URL}?page=${page}&limit=${limit}`;
-      
-      // If instructorId is provided, fetch evaluations for that instructor
-      if (instructorId) {
-        url = `${API_URL}/instructor/${instructorId}?page=${page}&limit=${limit}`;
-      }
-      
-      const response = await axios.get(url);
-      
-      // Handle both array and paginated responses
-      const data = response.data.data || response.data;
-      
-      // If it's an array, return it directly
-      if (Array.isArray(data)) {
-        return data;
-      }
-      
-      // Otherwise, handle as paginated response
-      return {
-        docs: Array.isArray(data.docs) ? data.docs : data.docs || [],
-        totalDocs: data.totalDocs || 0,
-        page: data.page || 1,
-        totalPages: data.totalPages || 1
-      };
+      const response = await axios.get('/evaluation');
+      return response.data.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch evaluations');
     }
@@ -43,58 +30,34 @@ export const fetchEvaluationById = createAsyncThunk(
   'evaluations/fetchById',
   async (id, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`${API_URL}/${id}`);
-      // API returns { success: true, data: { ... } }
+      const response = await axios.get(`/evaluation/${id}`);
       return response.data.data || response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch evaluation');
     }
   }
 );
-export const evaluationsbyinstructor = createAsyncThunk(
-  'evaluations/fetchByInstructor',
-  async (instructorId, { rejectWithValue }) => {
-    try {
-      const response = await axios.get(`/evaluation/instructor/${instructorId}`);
-      // The API returns { success: true, data: [...evaluations] }
-      const data = response.data.data;
-      
-      if (!Array.isArray(data)) {
-        console.error('Expected array but got:', data);
-        return [];
-      }
-      
-      return data;
-    } catch (error) {
-      console.error('Error fetching evaluations:', error);
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch evaluations');
-    }
-  }
-);
 
 export const createEvaluation = createAsyncThunk(
-  'evaluations/create',
-  async (evaluationData, { rejectWithValue, dispatch }) => {
+  'evaluations/createEvaluation',
+  async (evaluationData, { rejectWithValue }) => {
     try {
       const response = await axios.post('/evaluation', evaluationData);
-      
-      // After successful creation, fetch the latest evaluations
-      await dispatch(fetchAllEvaluations()).unwrap();
-      
-      toast.success('Evaluation created successfully');
+      toast.success('Evaluation created successfully!');
       return response.data;
     } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to create evaluation');
       return rejectWithValue(error.response?.data?.message || 'Failed to create evaluation');
     }
   }
 );
 
 export const updateEvaluation = createAsyncThunk(
-  'evaluations/update',
-  async ({ id, formData }, { rejectWithValue }) => {
+  'evaluations/updateEvaluation',
+  async ({ id, ...updates }, { rejectWithValue }) => {
     try {
-      const response = await axios.put(`${API_URL}/${id}`, formData);
-      toast.success('Evaluation updated successfully');
+      const response = await axios.put(`/evaluation/${id}`, updates);
+      toast.success('Evaluation updated successfully!');
       return response.data;
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to update evaluation');
@@ -104,11 +67,11 @@ export const updateEvaluation = createAsyncThunk(
 );
 
 export const deleteEvaluation = createAsyncThunk(
-  'evaluations/delete',
+  'evaluations/deleteEvaluation',
   async (id, { rejectWithValue }) => {
     try {
-      await axios.delete(`${API_URL}/${id}`);
-      toast.success('Evaluation deleted successfully');
+      await axios.delete(`/evaluation/${id}`);
+      toast.success('Evaluation deleted successfully!');
       return id;
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to delete evaluation');
@@ -117,206 +80,171 @@ export const deleteEvaluation = createAsyncThunk(
   }
 );
 
-export const submitEvaluationResponse = createAsyncThunk(
-  'evaluations/submitResponse',
-  async ({ evaluationId, answers }, { rejectWithValue }) => {
+export const updateEvaluationStatus = createAsyncThunk(
+  'evaluations/updateStatus',
+  async ({ id, status }, { rejectWithValue }) => {
     try {
-      const response = await axios.post(`/evaluation/${evaluationId}/responses`, { 
-        answers: Object.entries(answers).map(([questionId, answer]) => ({
-          question: questionId,
-          answer
-        }))
-      });
-      toast.success('Evaluation submitted successfully!');
+      const response = await axios.patch(`/evaluation/${id}/status`, { status });
       return response.data;
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to submit evaluation');
-      return rejectWithValue(error.response?.data?.message || 'Failed to submit evaluation');
+      toast.error(error.response?.data?.message || 'Failed to update status');
+      return rejectWithValue(error.response?.data?.message || 'Failed to update status');
     }
   }
 );
 
+export const submitEvaluationResponse = createAsyncThunk(
+  'evaluations/submitResponse',
+  async ({ id, responses, overallComment, courseCode }, { rejectWithValue }) => {
+    try {
+      const response = await axios.post(`/evaluation/${id}/responses`, {
+        responses,
+        overallComment,
+        courseCode,
+      });
+      toast.success('Evaluation submitted successfully!');
+      return response.data;
+    } catch (error) {
+      toast.error(error.response?.data || 'Failed to submit evaluation');
+      return rejectWithValue(error?.response?.data || 'Failed to submit evaluation');
+    }
+  }
+);
 
-const initialState = {
-  evaluations: {
-    docs: [],
-    totalDocs: 0,
-    page: 1,
-    totalPages: 1,
-  },
-  evaluation: null,
-  status: 'idle',
-  error: null,
-  message: null,
-  // Add a flag to track if evaluations have been loaded
-  loaded: false,
-};
+export const fetchEvaluationsByStudent = createAsyncThunk(
+  'evaluations/fetchByStudent',
+  async (studentId, { rejectWithValue }) => {
+    try {
+      // Remove the leading slash to prevent URL duplication
+      const response = await axios.get(`/evaluation/student/${studentId}`);
+      return response.data.data || response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch evaluations by student');
+    }
+  }
+);
 
+// Slice
 const evaluationSlice = createSlice({
   name: 'evaluations',
   initialState,
   reducers: {
-    resetEvaluationState: (state) => {
-      state.status = 'idle';
-      state.error = null;
-      state.message = null;
+    resetSubmissionStatus: (state) => {
+      state.submissionStatus = 'idle';
     },
     clearCurrentEvaluation: (state) => {
-      state.evaluation = null;
-    }
+      state.currentEvaluation = null;
+    },
   },
   extraReducers: (builder) => {
-    // Fetch Evaluations by Instructor
+    // Fetch Evaluations
     builder
-      .addCase(evaluationsbyinstructor.pending, (state) => {
-        state.status = 'loading';
-        state.error = null;
-      })
-      .addCase(evaluationsbyinstructor.fulfilled, (state, action) => {
-        state.status = 'succeeded';
-        state.evaluations = {
-          docs: Array.isArray(action.payload) ? action.payload : [],
-          totalDocs: Array.isArray(action.payload) ? action.payload.length : 0,
-          page: 1,
-          totalPages: 1
-        };
-        state.error = null;
-      })
-      .addCase(evaluationsbyinstructor.rejected, (state, action) => {
-        state.status = 'failed';
-        state.error = action.payload;
-        state.evaluations = { docs: [], totalDocs: 0, page: 1, totalPages: 0 };
-      })
-    // Fetch All Evaluations
-    builder
-  .addCase(fetchAllEvaluations.pending, (state) => {
+      .addCase(fetchEvaluations.pending, (state) => {
         state.status = 'loading';
       })
-      .addCase(fetchAllEvaluations.fulfilled, (state, action) => {
+      .addCase(fetchEvaluations.fulfilled, (state, action) => {
         state.status = 'succeeded';
-        state.loaded = true;
-        try {
-          // Handle both array and paginated responses
-          if (Array.isArray(action.payload)) {
-            state.evaluations.docs = action.payload;
-            state.evaluations.totalDocs = action.payload.length;
-            state.evaluations.totalPages = 1;
-          } else if (action.payload && typeof action.payload === 'object') {
-            // Handle paginated response object
-            state.evaluations.docs = Array.isArray(action.payload.docs) ? action.payload.docs : [];
-            state.evaluations.totalDocs = action.payload.totalDocs || state.evaluations.docs.length;
-            state.evaluations.page = action.payload.page || 1;
-            state.evaluations.totalPages = action.payload.totalPages || 1;
-          }
-          state.error = null;
-        } catch (error) {
-          console.error('Error processing evaluations:', error);
-          state.error = 'Failed to process evaluations data';
-        }
+        state.evaluations = action.payload;
       })
-      .addCase(fetchAllEvaluations.rejected, (state, action) => {
+      .addCase(fetchEvaluations.rejected, (state, action) => {
         state.status = 'failed';
         state.error = action.payload;
-      })
+      });
 
-      // Fetch Evaluation By ID
+    // Fetch Evaluation by ID
+    builder
       .addCase(fetchEvaluationById.pending, (state) => {
         state.status = 'loading';
+        state.error = null;
       })
       .addCase(fetchEvaluationById.fulfilled, (state, action) => {
         state.status = 'succeeded';
+        state.currentEvaluation = action.payload;
         state.evaluation = action.payload;
-        console.log(action.payload)
         state.error = null;
       })
       .addCase(fetchEvaluationById.rejected, (state, action) => {
         state.status = 'failed';
         state.error = action.payload;
-      })
+      });
 
-      // Create Evaluation
-      .addCase(createEvaluation.pending, (state) => {
-        state.status = 'loading';
-      })
+    // Create Evaluation
+    builder
       .addCase(createEvaluation.fulfilled, (state, action) => {
-        state.status = 'succeeded';
-        // Check if evaluations.docs exists and is an array before pushing
-        if (!state.evaluations.docs) {
-          state.evaluations.docs = [];
-        }
-        if (action.payload.data) {
-          state.evaluations.docs.unshift(action.payload.data); // Add new evaluation at the beginning
-          state.evaluations.totalDocs += 1;
-        }
-        state.message = 'Evaluation created successfully';
-      })
-      .addCase(createEvaluation.rejected, (state, action) => {
-        state.status = 'failed';
-        state.error = action.payload;
-      })
+        state.evaluations.push(action.payload);
+      });
 
-      // Update Evaluation
-      .addCase(updateEvaluation.pending, (state) => {
-        state.status = 'loading';
-      })
+    // Update Evaluation
+    builder
       .addCase(updateEvaluation.fulfilled, (state, action) => {
-        state.status = 'succeeded';
-        const index = state.evaluations.docs?.findIndex(
-          (evaluation) => evaluation._id === action.payload.data._id
+        const index = state.evaluations.findIndex(
+          (evalItem) => evalItem._id === action.payload._id
         );
-        if (index !== -1 && state.evaluations.docs) {
-          state.evaluations.docs[index] = action.payload.data;
+        if (index !== -1) {
+          state.evaluations[index] = action.payload;
         }
-        state.message = 'Evaluation updated successfully';
-      })
-      .addCase(updateEvaluation.rejected, (state, action) => {
-        state.status = 'failed';
-        state.error = action.payload;
-      })
+        if (state.currentEvaluation?._id === action.payload._id) {
+          state.currentEvaluation = action.payload;
+        }
+      });
 
-      // Delete Evaluation
-      .addCase(deleteEvaluation.pending, (state) => {
-        state.status = 'loading';
-      })
+    // Delete Evaluation
+    builder
       .addCase(deleteEvaluation.fulfilled, (state, action) => {
-        state.status = 'succeeded';
-        if (state.evaluations.docs) {
-          state.evaluations.docs = state.evaluations.docs.filter(
-            (evaluation) => evaluation._id !== action.payload
-          );
-          state.evaluations.totalDocs = Math.max(0, state.evaluations.totalDocs - 1);
-        }
-        state.message = 'Evaluation deleted successfully';
+        state.evaluations = state.evaluations.filter(
+          (evalItem) => evalItem._id !== action.payload
+        );
+      });
+
+    // Fetch Evaluations by Student
+    builder
+      .addCase(fetchEvaluationsByStudent.pending, (state) => {
+        state.status = 'loading';
       })
-      .addCase(deleteEvaluation.rejected, (state, action) => {
+      .addCase(fetchEvaluationsByStudent.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        state.evaluations = action.payload;
+      })
+      .addCase(fetchEvaluationsByStudent.rejected, (state, action) => {
         state.status = 'failed';
         state.error = action.payload;
-      })
+      });
 
-      // Submit Response
+    // Submit Response
+    builder
       .addCase(submitEvaluationResponse.pending, (state) => {
-        state.status = 'loading';
+        state.submissionStatus = 'submitting';
       })
       .addCase(submitEvaluationResponse.fulfilled, (state, action) => {
-        state.status = 'succeeded';
-        // Update the evaluation with the new response
-        if (state.evaluation) {
-          state.evaluation.responses = state.evaluation.responses || [];
-          state.evaluation.responses.push(action.payload.data);
-        }
-        state.message = 'Response submitted successfully';
+        state.submissionStatus = 'succeeded';
+        state.responses.push(action.payload);
       })
       .addCase(submitEvaluationResponse.rejected, (state, action) => {
-        state.status = 'failed';
+        state.submissionStatus = 'failed';
         state.error = action.payload;
+      })
+      
+      // Update Evaluation Status
+      .addCase(updateEvaluationStatus.fulfilled, (state, action) => {
+        const index = state.evaluations.findIndex(e => e._id === action.payload._id);
+        if (index !== -1) {
+          state.evaluations[index] = action.payload;
+        }
+        if (state.currentEvaluation?._id === action.payload._id) {
+          state.currentEvaluation = action.payload;
+        }
       });
   },
 });
 
-// Export actions
-export const { resetEvaluationState, clearCurrentEvaluation } = evaluationSlice.actions;
-
 // Selectors
+export const selectAllEvaluations = (state) => state.evaluations.evaluations;
+export const selectCurrentEvaluation = (state) => state.evaluations.currentEvaluation;
+export const selectEvaluationStatus = (state) => state.evaluations.status;
+export const selectSubmissionStatus = (state) => state.evaluations.submissionStatus;
+export const selectEvaluationError = (state) => state.evaluations.error;
 
+// Export actions
+export const { resetSubmissionStatus, clearCurrentEvaluation } = evaluationSlice.actions;
 
 export default evaluationSlice.reducer;

@@ -27,18 +27,18 @@ import { fetchAllUsers } from "@/Store/UsersDataSlice";
 
 const CATEGORIES = [
   {
-    value: "college_team",
+    value: "College_Team",
     label: "College Team Form",
     icon: <Users className="h-4 w-4" />,
   },
   {
-    value: "self_evaluate",
+    value: "Self_Evaluation",
     label: "Self Evaluation",
     icon: <UserCheck className="h-4 w-4" />,
   },
-  { value: "students", label: "Students", icon: <User className="h-4 w-4" /> },
+  { value: "Student", label: "Students", icon: <User className="h-4 w-4" /> },
   {
-    value: "immediate_supervisor",
+    value: "Immediate_Supervisior",
     label: "Immediate Supervisor",
     icon: <UserCheck className="h-4 w-4" />,
   },

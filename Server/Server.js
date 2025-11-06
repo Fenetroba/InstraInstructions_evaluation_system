@@ -7,12 +7,12 @@ const PORT=process.env.PORT || 5000
 import cookieParser from "cookie-parser";
 import UserAuthrouter from "./Router/UserAuth.Router.js";
 import UserDatarouter from "./Router/userData.Router.js";
-import Evaluationrouter from "./Router/EvaluationForm.Router.js";
+import Evaluationrouter from "./Router/evaluation.routes.js";
 connectDB();
 const app = express();
 app.use(cors({
   origin: "http://localhost:5173", // your frontend URL
-  methods: ["GET", "POST", "PUT", "DELETE"],
+  methods: ["GET", "POST", "PUT", "DELETE","PATCH"],
   credentials: true, // if using cookies or auth headers
 }));
 app.use(express.json());

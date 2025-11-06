@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { fetchEvaluations } from '@/Store/EvaluationSlice';
 
 const InstructorList = ({ user }) => {
   const dispatch = useDispatch();
@@ -12,7 +13,11 @@ const InstructorList = ({ user }) => {
   
   // Get users from Redux store
   const { users, loading, error } = useSelector((state) => state.usersData);
-
+const { evaluations } = useSelector((state) => state.evaluations);
+useEffect(()=>{
+dispatch(fetchEvaluations())
+},[dispatch])
+console.log(evaluations)
   useEffect(() => {
     // Only fetch users if we don't have them yet
     if (users.length === 0) {
@@ -21,16 +26,19 @@ const InstructorList = ({ user }) => {
   }, [dispatch, users.length]);
 
   // Filter instructors from the same department as the student
-  const departmentInstructors = users.filter(
-    (u) => 
-      u.role === 'instructor' && 
-      u.department === user?.department
+  const departmentEvaluation = evaluations.filter(
+    (evaluation) => 
+      evaluation.criteria
   ) || [];
 
+ console.log(departmentEvaluation)
   // Handle instructor selection
-  const handleSelectInstructor = (instructor) => {
-    navigate(`/evaluations/instructor/${instructor._id}`);
+  const handleSelectInstructor = (evaluation) => {
+    navigate(`/evaluation/${evaluation._id}`);
   };
+ if(departmentEvaluation.status!=='active'){
+  
+ }
 
   if (loading) {
     return (
@@ -43,27 +51,33 @@ const InstructorList = ({ user }) => {
   return (
     <div className="space-y-4">
       <h2 className="text-2xl font-bold mb-4 flex items-center justify-center"><Users/><span className='ml-2'>Instructors in Your Department</span></h2>
-      {departmentInstructors.length === 0 ? (
+      {(departmentEvaluation.length === 0) ? (
         <p>No instructors found in your department.</p>
       ) : (
         <div className="grid mb-10 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {departmentInstructors.map((instructor) => (
-            <Card key={instructor._id} className="hover:shadow-lg transition-shadow">
+          {departmentEvaluation.map((evaluation) => (
+            evaluation.category === "Student" ? (
+            <Card key={evaluation._id} className="hover:shadow-lg transition-shadow">
               <CardHeader>
-                <CardTitle className="text-[17px]">{instructor.fullName || 'Instructor'}</CardTitle>
+                <CardTitle className="text-[17px]">{evaluation.title || 'Instructor'}</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-gray-600 text-[17px] mb-4">
-                  {instructor.email || 'No email available'}
+                  {evaluation.description || 'No email available'}
                 </p>
+                {evaluation.status!=='active' ? (
+                  <p className="bg-yellow-500 p-2 text-[17px] mb-4">Evaluation is not active</p>
+                ) : (
                 <Button 
-                  onClick={() => handleSelectInstructor(instructor)}
-                  className="w-full bg-(--six) cursor-pointer hover:bg-blue-600 transition-colors"
+                  onClick={() => handleSelectInstructor(evaluation)}
+                  className="w-full bg-(--six) cursor-pointer hover:bg-green-700 transition-colors"
                 >
                   View Evaluation Forms
                 </Button>
+                )}
               </CardContent>
             </Card>
+            ) : null
           ))}
         </div>
       )}
