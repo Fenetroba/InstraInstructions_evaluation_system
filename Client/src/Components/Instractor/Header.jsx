@@ -13,10 +13,8 @@ const dispatch=useDispatch()
   const toggleProfile = () => setIsProfileOpen(!isProfileOpen);
 
   const navLinks = [
-    { name: 'Dashboard', path: '/quality-office-home' },
-    { name: 'Instructors', path: '/instructors' },
-    { name: 'Evaluations', path: '/evaluations' },
-    { name: 'Reports', path: '/reports' },
+    { name: 'INSTRACTOR DASHBOARD', path: '/quality-office-home' },
+ 
   ];
   const LogOutHandler=()=>{
     dispatch(logoutUser())

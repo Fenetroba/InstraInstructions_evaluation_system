@@ -1,19 +1,22 @@
-import Header from '@/Components/Instractor/Header'
-import Sider from '@/Components/Instractor/Sider'
-import React from 'react'
-import Analysis from '../Alluser/Analysis'
+import GetEvaluationList from "@/Components/Instractor/GetEvaluationList";
+import Header from "@/Components/Instractor/Header";
+import Sider from "@/Components/Instractor/Sider";
+import React from "react";
 
-const InstractorHome = ({user}) => {
+const InstractorHome = ({ user }) => {
   return (
-    <div className='Dashboard h-screen'>
-      <Header/>
-     <div className='flex items-center mb-10'>
-     <Sider/>
-     <div>INSTRACTOR DASHBOARD <span className='bg-(--three) p-3 rounded-lg'>{user.fullName}</span></div>
-     </div>
-     <Analysis/>
+    <div className=" h-screen">
+      <Header />
+      <Sider />
+      <div className="flex items-center text-(--one)">
+        <div className="m-4 bg-(--six) p-3 rounded-r-lg">
+        HELLO 👋👋
+          <span className="bg-(--three) p-3 rounded-lg ml-10">{user.fullName}</span>
+        </div>
+      </div>
+      <GetEvaluationList />
     </div>
-  )
-}
+  );
+};
 
-export default InstractorHome
+export default InstractorHome;

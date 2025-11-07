@@ -2,15 +2,19 @@ import React, { useEffect } from 'react';
 import { Users, ClipboardCheck, FileText, TrendingUp, User } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchAllUsers } from '@/Store/UsersDataSlice';
+import { fetchEvaluations } from '@/Store/EvaluationSlice';
 
 const Analysis = () => {
   const {users}=useSelector(state=>state.usersData)
-  const dispatch=useDispatch()
-  useEffect(() => {
-    dispatch(fetchAllUsers());
-  }, [dispatch]);
-  const instructors = users.filter(user => user.role === "instructor");
-  const students = users.filter(user => user.role === "Student");
+    const { evaluations } = useSelector((state) => state.evaluations);
+    const dispatch=useDispatch()
+    useEffect(() => {
+      dispatch(fetchAllUsers());
+      dispatch(fetchEvaluations());
+    }, [dispatch]);
+    const instructors = users.filter(user => user.role === "instructor");
+    const students = users.filter(user => user.role === "Student");
+   
 
   return (
     <div className="p-6">
@@ -32,7 +36,7 @@ const Analysis = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Evaluations</p>
-              <p className="text-3xl font-bold text-gray-900">1</p>
+              <p className="text-3xl font-bold text-gray-900">{evaluations.length}</p>
             </div>
             <div className="bg-green-100 rounded-full p-3">
               <ClipboardCheck className="h-8 w-8 text-green-600" />

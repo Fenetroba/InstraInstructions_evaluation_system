@@ -81,7 +81,7 @@ const Login = () => {
   };
 
   return (
-    <div className='min-h-screen  backdrop-blur-[10px] magicpattern flex  items-center  bg-blue-100'>
+    <div className='min-h-screen  magicpattern flex flex-col-reverse  items-center  bg-blue-100'>
       {/* Login Form */}
       <div className='w-full md:w-1/2 flex items-center justify-center p-8'>
         <div className='w-full max-w-md bg-(--six) p-8 rounded-xl shadow-lg'>
@@ -149,16 +149,17 @@ const Login = () => {
         </div>
       </div>
       
-      {/* Right Side - Decorative */}
-      <div className='flex items-end'>
+   
         <div className='text-white text-center max-w-ms  backdrop-blur-[30px]  p-10 shadow-lg rounded-lg text-(--one)'>
-          <img src={logo} alt="logo" className='w-20 h-20' />
-          <h2 className='text-4xl font-bold mb-4 tex'>Oromia State University </h2>
-          <p className='text-blue-100 text-lg'>
+        <div className='flex items-center'>
+            <img src={logo} alt="logo" className='w-20 h-20' />
+          <h2 className='sm:text-4xl text-[22px] font-bold mb-4 text-(--six)'>Oromia State University </h2>
+        </div>
+          <p className='text-lg text-(--five)'>
             Instructor Evaluation System
           </p>
         </div>
-      </div>
+ 
     </div>
   );
 };

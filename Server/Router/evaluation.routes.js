@@ -17,13 +17,15 @@ router.use(protect);
 
 // Quality Officer routes
 router.route('/').post(authorize('quality_officer'), createEvaluationForm);
-router.route('/').get(authorize('quality_officer',"Student"), getAllEvaluationForms);
+router.route('/').get(authorize('quality_officer',"Student",'instructor'), getAllEvaluationForms);
 router.route('/:id/status').patch(authorize('quality_officer'), updateEvaluationStatus);
 router.route('/:id').delete(authorize('quality_officer'), deleteEvaluationForm);
 
 // Student/Instructor routes
 router.route('/:id')
   .get(authorize('Student', 'instructor', 'quality_officer'), getEvaluationForm);
+router.route('peer-evaluation/:id')
+  .get(authorize('instructor'), getEvaluationForm);
 
 router.route('/:id/responses')
   .post(authorize('Student', 'instructor'), submitEvaluationResponse)

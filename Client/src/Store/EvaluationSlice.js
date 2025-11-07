@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 const initialState = {
   evaluations: [],
   currentEvaluation: null,
-  responses: [],
+  responses: [], 
   status: 'idle', // 'idle' | 'loading' | 'succeeded' | 'failed'
   error: null,
   submissionStatus: 'idle', // 'idle' | 'submitting' | 'succeeded' | 'failed'
@@ -19,7 +19,8 @@ export const fetchEvaluations = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await axios.get('/evaluation');
-      return response.data.data;
+      return response.data.data || response.data;
+      
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch evaluations');
     }
@@ -31,6 +32,17 @@ export const fetchEvaluationById = createAsyncThunk(
   async (id, { rejectWithValue }) => {
     try {
       const response = await axios.get(`/evaluation/${id}`);
+      return response.data.data || response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch evaluation');
+    }
+  }
+);
+export const fetchEvaluationByIdPeer = createAsyncThunk(
+  'evaluations/fetchByIdPeer',
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(`/evaluation/peer-evaluation/${id}`);
       return response.data.data || response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch evaluation');
